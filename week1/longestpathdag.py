@@ -142,8 +142,8 @@ def read_edges(edges):
         print(e)
         str1 = e.split("->")
         str2 = str1[1].split(":")
-        start = int(str1[0])
-        end = int(str2[0])
+        start = str1[0]
+        end = str2[0]
         weight = int(str2[1])
         es.append((start, (end, weight)))
     print(es)
@@ -196,8 +196,8 @@ if __name__ == '__main__':
         print("Expected input: 1 param,file. Format '<int_start_node>\n<int_end_node><node_list>\nnode format for node list: {start_node}->{end_node}:{weight}")
 
     with open(sys.argv[1]) as f:
-        start_node = int(f.readline())
-        end_node = int(f.readline())
+        start_node = f.readline().rstrip()
+        end_node = f.readline().rstrip()
         edges = f.readlines()
 
     weight, path = dag_longest_path(start_node, end_node, edges)
