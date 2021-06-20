@@ -1,4 +1,4 @@
-#! /bin/python3
+#! /usr/bin/python3
 
 import sys
 import time
@@ -30,10 +30,10 @@ def print_matrix(list_of_lists):
         print("  ".join([str(n).rjust(3) for n in list_of_lists[i]]))
 
 def manhattan_tourist(height, width, down_weights, right_weights):
-    print(height)
-    print(width)
-    print(down_weights)
-    print(right_weights)
+    #print(height)
+    #print(width)
+    #print(down_weights)
+    #print(right_weights)
 
     max_vals = []
     for i in range(height+1):
@@ -41,18 +41,18 @@ def manhattan_tourist(height, width, down_weights, right_weights):
         for j in range(width+1):
             row.append(0)
         max_vals.append(row)
-    print_matrix(max_vals)
+    #print_matrix(max_vals)
 
     for i in range(height):
         max_vals[i+1][0] = max_vals[i][0] + down_weights[i][0]    
-    print_matrix(max_vals)
+    #print_matrix(max_vals)
 
     for i in range(width):
         max_vals[0][i+1] = max_vals[0][i] + right_weights[0][i]
-    print_matrix(max_vals)
+    #print_matrix(max_vals)
 
     for k in range(1, width+1):
-        print(k)
+        #print(k)
         for i in range(1, height+1):
             for j in range(k, k+1):
                 from_left = max_vals[i][j-1] + right_weights[i][j-1]
@@ -63,7 +63,7 @@ def manhattan_tourist(height, width, down_weights, right_weights):
                 else:
                     max_vals[i][j] = from_above
 
-            print_matrix(max_vals)
+            #print_matrix(max_vals)
     return max_vals[height][width]
 
 def outputlcs(backtrack, v, height, width, nucleotide_h, nucleotide_w):
@@ -93,10 +93,10 @@ def outputlcs(backtrack, v, height, width, nucleotide_h, nucleotide_w):
         align_h = nucleotide_h[0:height] + align_h
         align_w = "-"*(height) + align_w
 
-    print()
-    print(align_h)
-    print(align_w)
-    return output
+    #print()
+    #print(align_h)
+    #print(align_w)
+    return align_h, align_w
 
 def outputlcs_recursive(backtrack, v, height, width):
     if height == 0 or width == 0:
@@ -124,22 +124,22 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring):
         max_vals.append(vals)
         backtrack.append(bv)
 
-    print()
-    print_matrix(max_vals)
-    print_matrix(backtrack)
+    #print()
+    #print_matrix(max_vals)
+    #print_matrix(backtrack)
 
     for i in range(len(nucleotide_h)+1):
         max_vals[i][0] = 0 - (indel_penalty*(i))
     for j in range(len(nucleotide_w)+1):
         max_vals[0][j] = 0 - (indel_penalty*(j))
 
-    print()
-    print_matrix(max_vals)
-    print_matrix(backtrack)
+    #print()
+    #print_matrix(max_vals)
+    #print_matrix(backtrack)
 
     for i in range(1, len(nucleotide_h)+1):
         for j in range(1, len(nucleotide_w)+1):
-            print("i:{0} j:{1}".format(str(i), str(j)))
+            #print("i:{0} j:{1}".format(str(i), str(j)))
             match = scoring[nucleotide_w[j-1]][nucleotide_h[i-1]]
             max_vals[i][j] = max(max_vals[i-1][j] - indel_penalty, \
                                  max_vals[i][j-1] - indel_penalty, \
@@ -170,9 +170,10 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring):
     #print(score)
     #print(alignment_h)
     #print(alignment_w)
-    print(max_vals[len(nucleotide_h)][len(nucleotide_w)])
+    f_score = max_vals[len(nucleotide_h)][len(nucleotide_w)]
 
-    return outputlcs(backtrack, nucleotide_h, len(nucleotide_h), len(nucleotide_w), nucleotide_h, nucleotide_w)
+    out_h, out_w = outputlcs(backtrack, nucleotide_h, len(nucleotide_h), len(nucleotide_w), nucleotide_h, nucleotide_w)
+    return f_score, out_h, out_w
 
 if __name__ == '__main__':
     start = time.process_time()
@@ -200,8 +201,10 @@ if __name__ == '__main__':
         scoring[key] = row_dict
     print(scoring)
 
-    match = lcsbacktrack(nucleotide_h, nucleotide_w, scoring)
-    print(match)
+    f_score, out_h, out_w = lcsbacktrack(nucleotide_h, nucleotide_w, scoring)
+    print(f_score)
+    print(out_h)
+    print(out_w)
 
     end = time.process_time()
     print("Time: {0}".format(end-start))
