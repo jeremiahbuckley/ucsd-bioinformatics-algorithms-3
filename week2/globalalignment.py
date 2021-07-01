@@ -170,6 +170,7 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring):
     #print(score)
     #print(alignment_h)
     #print(alignment_w)
+    print(max_vals[len(nucleotide_h)][len(nucleotide_w)])
     f_score = max_vals[len(nucleotide_h)][len(nucleotide_w)]
 
     out_h, out_w = outputlcs(backtrack, nucleotide_h, len(nucleotide_h), len(nucleotide_w), nucleotide_h, nucleotide_w)

@@ -126,7 +126,7 @@ def outputlcs(backtrack, v, height, width, nucleotide_h, nucleotide_w, max_overa
     #print()
     print(align_h)
     print(align_w)
-    return output
+    return align_h, align_w
 
 def outputlcs_recursive(backtrack, v, height, width):
     if height == 0 or width == 0:
@@ -234,8 +234,10 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring):
     print(nucleotide_h)
     print(nucleotide_w)
     print(max_vals[max_overall_loc[0]][max_overall_loc[1]])
+    f_score = max_vals[max_overall_loc[0]][max_overall_loc[1]]
 
-    return outputlcs(backtrack, nucleotide_h, max_overall_loc[0], max_overall_loc[1], nucleotide_h, nucleotide_w, max_overall_loc)
+    align_h, align_w = outputlcs(backtrack, nucleotide_h, max_overall_loc[0], max_overall_loc[1], nucleotide_h, nucleotide_w, max_overall_loc)
+    return f_score, align_h, align_w
 
 if __name__ == '__main__':
     start = time.process_time()
