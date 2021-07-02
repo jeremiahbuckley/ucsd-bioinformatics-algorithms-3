@@ -26,6 +26,38 @@ def print_matrix(list_of_lists, str_h, str_v):
         else:
             print("{0}   {1}".format(str_v[i-1], "  ".join([str(n).rjust(5) for n in list_of_lists[i]])))
 
+def load_scoring(scoring_file_loc):
+    scoring_strs = []
+    with open(scoring_file_loc) as f:
+        scoring_strs = f.readlines()
+
+    scoring = {}
+    virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
+    for i in range(1, len(scoring_strs)):
+        row = scoring_strs[i].split()
+        key = row[0]
+        row_dict = {}
+        for j in range(1, len(row)):
+            virt_key = virt_keys[j-1]
+            row_dict[virt_key] = int(row[j])
+        scoring[key] = row_dict
+    print(scoring)
+    return scoring
+
+def simple_scoring(match, mismatch):
+
+    scoring = {}
+    virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
+    for i in range(len(virt_keys)):
+        key = virt_keys[i]
+        row_dict = {}
+        for j in range(len(virt_keys)):
+            virt_key = virt_keys[j]
+            row_dict[virt_key] = match if i == j else mismatch
+        scoring[key] = row_dict
+    print(scoring)
+    return scoring
+
 def outputlcs(backtrack, v, height, width, nucleotide_h, nucleotide_w, max_overall_loc, alignment_type):
 
     output = ""
@@ -124,20 +156,7 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring, alignment_type):
     for i in range(1, len(nucleotide_h)+1):
         for j in range(1, len(nucleotide_w)+1):
             #print("i:{0} j:{1}".format(str(i), str(j)))
-            # TODO: change fitting, overlap to a scoring matrix for readability
-            match = -100
-            if alignment_type == "global" or alignment_type == "local":
-                match = scoring[nucleotide_w[j-1]][nucleotide_h[i-1]]
-            elif alignment_type == "fitting":
-                match = -1
-                if nucleotide_h[i-1] == nucleotide_w[j-1]:
-                    match = 1
-            elif alignment_type == "overlap":
-                match = -2
-                if nucleotide_h[i-1] == nucleotide_w[j-1]:
-                    match = 1
-            else:
-                raise ValueError("Unknown alingment_type {0}".format(alignment_type))
+            match = scoring[nucleotide_w[j-1]][nucleotide_h[i-1]]
 
             max_vals[i][j] = max(max_vals[i-1][j] - indel_penalty, \
                                  max_vals[i][j-1] - indel_penalty, \
@@ -199,53 +218,17 @@ if __name__ == '__main__':
 
     alignment_type = sys.argv[1]
 
-    scoring_strs = []
-    with open("./PAM250_scoring.txt") as f:
-        scoring_strs = f.readlines()
-
-    if alignment_type == "global":
-        with open("./BLOSUM62.txt") as f:
-            scoring_strs = f.readlines()
-    elif alignment_type == "local":
-        with open("./PAM250_scoring.txt") as f:
-            scoring_strs = f.readlines()
-    elif alignment_type == "fitting":
-        pass
-    elif alignment_type == "overlap":
-        pass
-    else:
-        raise ValueError("Unexpected alignment type: {0}".format(alignment_type))
-
     scoring = {}
-    virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
-
-    if alignment_type == "global" or alignment_type == "local":
-        for i in range(1, len(scoring_strs)):
-            row = scoring_strs[i].split()
-            key = row[0]
-            row_dict = {}
-            for j in range(1, len(row)):
-                virt_key = virt_keys[j-1]
-                row_dict[virt_key] = int(row[j])
-            scoring[key] = row_dict
-    elif alignment_type == "fitting" or alignment_type == "overlap":
-        mismatch = -1
-        if alignment_type == "overlap":
-            mismatch = -2
-        match = 1
-
-        for i in range(len(virt_keys)):
-            key = virt_keys[i]
-            row_dict = {}
-            for j in range(len(virt_keys)):
-                virt_key = virt_keys[j]
-                row_dict[virt_key] = match if i == j else mismatch
-            scoring[key] = row_dict
+    if alignment_type == "global":
+        scoring = load_scoring("./BLOSUM62.txt")
+    elif alignment_type == "local":
+        scoring = load_scoring("./PAM250_scoring.txt")
+    elif alignment_type == "fitting":
+        scoring = simple_scoring(1, -1)
+    elif alignment_type == "overlap":
+        scoring = simple_scoring(1, -2)
     else:
         raise ValueError("Unexpected alignment type: {0}".format(alignment_type))
-    
-    print(scoring)
-
 
     with open(sys.argv[2]) as f:
         nucleotide_h = f.readline().rstrip()

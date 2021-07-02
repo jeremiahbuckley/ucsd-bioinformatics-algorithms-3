@@ -116,13 +116,13 @@ def overlap_tests():
 
 def run_all_tests():
 
-    #global_tests()
+    global_tests()
     
-    #local_tests()
+    local_tests()
 
     fitting_tests()
 
-    #overlap_tests()
+    overlap_tests()
 
     return
 
