@@ -5,6 +5,14 @@ import time
 
 import any_alignment
 
+def print_scoring(scoring, keys):
+    print("      " + "    ".join([k for k in keys]))
+    for i in range(len(keys)):
+        val_str = ""
+        for j in range(len(keys)):
+            val_str += " " + str(scoring[keys[i]][keys[j]]).rjust(4)
+        print("{0} {1}".format(keys[i], val_str))
+
 def load_scoring(scoring_file_loc):
     scoring_strs = []
     with open(scoring_file_loc) as f:
@@ -20,7 +28,9 @@ def load_scoring(scoring_file_loc):
             virt_key = virt_keys[j-1]
             row_dict[virt_key] = int(row[j])
         scoring[key] = row_dict
-    print(scoring)
+
+    print_scoring(scoring, virt_keys)
+
     return scoring
 
 def simple_scoring(match, mismatch):
@@ -34,7 +44,9 @@ def simple_scoring(match, mismatch):
             virt_key = virt_keys[j]
             row_dict[virt_key] = match if i == j else mismatch
         scoring[key] = row_dict
-    print(scoring)
+
+    print_scoring(scoring, virt_keys)
+
     return scoring
 
 def alignment_test_2(testfile, alignment_function, scoring, alignment_type):
@@ -51,10 +63,11 @@ def test_verify(results, verifyfile):
         val_1 = f.readline().rstrip()
         val_2 = f.readline().rstrip()
 
-    print(verifyfile)
+    print("calcualted result:")
     for i in range(3):
         print(results[i])
 
+    print("expected result:")
     print(score)
     print(val_1)
     print(val_2)
@@ -110,7 +123,7 @@ def overlap_tests():
                         ["test/09_OverlapAlignment/inputs/test4.txt","test/09_OverlapAlignment/outputs/test4.txt"], \
 #                        ["test/09_OverlapAlignment/inputs/test5.txt","test/09_OverlapAlignment/outputs/test5.txt"], \
 #                        ["test/09_OverlapAlignment/inputs/test6.txt","test/09_OverlapAlignment/outputs/test6.txt"], \
-                        ["test/dataset_248_7.txt","test/dataset_247_10_expected_result.txt"], \
+                        ["test/dataset_248_7.txt","test/dataset_248_7_expected_result.txt"], \
                         ]:
         single_test(in_f, out_f, scoring,"overlap")
 

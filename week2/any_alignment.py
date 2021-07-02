@@ -3,15 +3,18 @@
 import sys
 import time
 
-_prev_node_is_up_ = 1
-_prev_node_is_left_ = 2
-_prev_node_is_diagonal_ = 3
-_prev_node_is_zero_ = 4
-_prev_node_is_end_local_ = 5
+_prev_node_is_up_ = '↑'
+_prev_node_is_left_ = '←'
+_prev_node_is_diagonal_ = '↖︎'
+_prev_node_is_zero_ = '0'
 
 def print_matrix(list_of_lists, str_h, str_v):
     height = len(list_of_lists)
     width = len(list_of_lists[0])
+
+    if height > 80 or width > 80:
+        print("Matrix will be too large to analyze. Not printing.")
+        return
 
     #print()
     #print(len(str_v))
@@ -25,6 +28,14 @@ def print_matrix(list_of_lists, str_h, str_v):
             print("    {0}".format("  ".join([str(n).rjust(5) for n in list_of_lists[i]])))
         else:
             print("{0}   {1}".format(str_v[i-1], "  ".join([str(n).rjust(5) for n in list_of_lists[i]])))
+
+def print_scoring(scoring, keys):
+    print("      " + "    ".join([k for k in keys]))
+    for i in range(len(keys)):
+        val_str = ""
+        for j in range(len(keys)):
+            val_str += " " + str(scoring[keys[i]][keys[j]]).rjust(4)
+        print("{0} {1}".format(keys[i], val_str))
 
 def load_scoring(scoring_file_loc):
     scoring_strs = []
@@ -41,7 +52,9 @@ def load_scoring(scoring_file_loc):
             virt_key = virt_keys[j-1]
             row_dict[virt_key] = int(row[j])
         scoring[key] = row_dict
-    print(scoring)
+
+    print_scoring(scoring, virt_keys)
+
     return scoring
 
 def simple_scoring(match, mismatch):
@@ -55,12 +68,13 @@ def simple_scoring(match, mismatch):
             virt_key = virt_keys[j]
             row_dict[virt_key] = match if i == j else mismatch
         scoring[key] = row_dict
-    print(scoring)
+
+    print_scoring(scoring, virt_keys)
+
     return scoring
 
-def outputlcs(backtrack, v, height, width, nucleotide_h, nucleotide_w, max_overall_loc, alignment_type):
+def outputlcs(backtrack, height, width, nucleotide_h, nucleotide_w, alignment_type):
 
-    output = ""
     align_h = ""
     align_w = ""
     #print(max_overall_loc)
@@ -70,11 +84,6 @@ def outputlcs(backtrack, v, height, width, nucleotide_h, nucleotide_w, max_overa
         if backtrack[height][width] == _prev_node_is_zero_:
             height = 0
             width = 0
-        elif backtrack[height][width] == _prev_node_is_end_local_:
-            align_h = nucleotide_h[max_overall_loc[0]-1] + align_h
-            align_w = nucleotide_w[max_overall_loc[1]-1] + align_w
-            height = max_overall_loc[0]
-            width = max_overall_loc[1]
         elif backtrack[height][width] == _prev_node_is_up_:
             align_h = nucleotide_h[height-1] + align_h
             align_w = "-" + align_w
@@ -88,7 +97,6 @@ def outputlcs(backtrack, v, height, width, nucleotide_h, nucleotide_w, max_overa
             align_w = nucleotide_w[width-1] + align_w
             height -= 1
             width -= 1
-            output = v[height] + output
 
     if alignment_type == "global":
         if height == 0 and width != 0:
@@ -99,8 +107,6 @@ def outputlcs(backtrack, v, height, width, nucleotide_h, nucleotide_w, max_overa
             align_w = "-"*(height) + align_w
 
     #print()
-    print(align_h)
-    print(align_w)
     return align_h, align_w
 
 def lcsbacktrack(nucleotide_h, nucleotide_w, scoring, alignment_type):
@@ -124,7 +130,7 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring, alignment_type):
         bv = []
         for j in range(len(nucleotide_w)+1):
             vals.append(100)
-            bv.append(100)
+            bv.append('x')
         max_vals.append(vals)
         backtrack.append(bv)
 
@@ -193,20 +199,21 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring, alignment_type):
                 all_maxes.append(max_overall_loc)
                 # still have to figure out backtrack
 
-    if max_overall_loc[0] != len(nucleotide_h) or max_overall_loc[1] != len(nucleotide_w):
-        backtrack[len(nucleotide_h)][len(nucleotide_w)] = _prev_node_is_end_local_
         #print()
         #print_matrix(max_vals)
         #print_matrix(backtrack)
     
 
     #print()
+    #print(all_maxes)
+    f_score = max_vals[max_overall_loc[0]][max_overall_loc[1]]
+    out_h, out_w = outputlcs(backtrack, max_overall_loc[0], max_overall_loc[1], nucleotide_h, nucleotide_w, alignment_type)
+
     print_matrix(max_vals, nucleotide_w, nucleotide_h)
     print_matrix(backtrack, nucleotide_w, nucleotide_h)
-    #print(all_maxes)
-    print(max_vals[len(nucleotide_h)][len(nucleotide_w)])
-    f_score = max_vals[max_overall_loc[0]][max_overall_loc[1]]
-    out_h, out_w = outputlcs(backtrack, nucleotide_h, max_overall_loc[0], max_overall_loc[1], nucleotide_h, nucleotide_w, max_overall_loc, alignment_type)
+    print(f_score)
+    print(out_h)
+    print(out_w)
 
     return f_score, out_h, out_w
 
