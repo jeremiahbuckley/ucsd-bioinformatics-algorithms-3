@@ -245,7 +245,6 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring):
     print(nucleotide_h)
     print(nucleotide_w)
 
-    print_matrix(max_vals, nucleotide_w, nucleotide_h)
     print("oa")
     #print(max_vals[len(nucleotide_h)][len(nucleotide_w)])
     f_score = max_vals[max_overall_loc[0]][max_overall_loc[1]]

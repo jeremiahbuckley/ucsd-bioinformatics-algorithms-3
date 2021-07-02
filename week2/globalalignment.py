@@ -166,6 +166,8 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring):
         #print(alignment_w)
         #print_matrix(max_vals)
         #print_matrix(backtrack)
+    print_matrix(max_vals)
+    print_matrix(backtrack)
 
     #print(score)
     #print(alignment_h)
