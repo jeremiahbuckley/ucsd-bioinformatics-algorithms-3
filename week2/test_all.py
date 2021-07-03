@@ -2,6 +2,7 @@
 
 import sys
 import time
+#from week2.any_alignment import AlignmentStrategyGlobal
 
 import any_alignment
 
@@ -49,13 +50,6 @@ def simple_scoring(match, mismatch):
 
     return scoring
 
-def alignment_test_2(testfile, alignment_function, scoring, alignment_type):
-    with open(testfile) as f:
-        nucleotide_h = f.readline().rstrip()
-        nucleotide_w = f.readline().rstrip()
-
-    return alignment_function(nucleotide_h, nucleotide_w, scoring, alignment_type)
-
 def test_verify(results, verifyfile):
 
     with open(verifyfile) as f:
@@ -76,10 +70,16 @@ def test_verify(results, verifyfile):
     assert results[1] == val_1
     assert results[2] == val_2
 
-def single_test(input_file, expected_results_file, scoring_table, alignment_type):
+def single_test(input_file, expected_results_file, alignment_type, alignment_strategy):
     print(input_file)
     print(expected_results_file)
-    results = alignment_test_2(input_file, any_alignment.lcsbacktrack, scoring_table, alignment_type)
+
+
+    with open(input_file) as f:
+        nucleotide_h = f.readline().rstrip()
+        nucleotide_w = f.readline().rstrip()
+
+    results = any_alignment.lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy)
     test_verify(results, expected_results_file)
 
 def global_tests():
@@ -89,7 +89,7 @@ def global_tests():
                         ["test/global_alignment_test_dataset_2.txt","test/global_alignment_test_dataset_2_expected_result.txt"], \
                         ["test/dataset_247_3.txt","test/dataset_247_3_expected_result.txt"] \
                         ]:
-        single_test(in_f, out_f, scoring,"global")
+        single_test(in_f, out_f,"global", any_alignment.AlignmentStrategyGlobal(5, scoring))
 
 def local_tests():
     scoring = load_scoring("./PAM250_scoring.txt")
@@ -100,7 +100,7 @@ def local_tests():
                         ["test/local_alignment_test_4.txt","test/local_alignment_test_4_expected_result.txt"], \
                         ["test/local_alignment_test_5.txt","test/local_alignment_test_5_expected_result.txt"], \
                         ]:
-        single_test(in_f, out_f, scoring,"local")
+        single_test(in_f, out_f,"local", any_alignment.AlignmentStrategyLocal(5, scoring))
 
 def fitting_tests():
     scoring = simple_scoring(1, -1)
@@ -111,7 +111,7 @@ def fitting_tests():
                         ["test/08_FittingAlignment/inputs/test4.txt", "test/08_FittingAlignment/outputs/test4.txt"], \
 #                        ["test/08_FittingAlignment/inputs/test5.txt", "test/08_FittingAlignment/outputs/test5.txt"], \
                         ]:
-        single_test(in_f, out_f, scoring,"fitting")
+        single_test(in_f, out_f,"fitting", any_alignment.AlignmentStrategyFitting(1, scoring))
 
 def overlap_tests():
     scoring = simple_scoring(1, -2)
@@ -125,7 +125,7 @@ def overlap_tests():
 #                        ["test/09_OverlapAlignment/inputs/test6.txt","test/09_OverlapAlignment/outputs/test6.txt"], \
                         ["test/dataset_248_7.txt","test/dataset_248_7_expected_result.txt"], \
                         ]:
-        single_test(in_f, out_f, scoring,"overlap")
+        single_test(in_f, out_f,"overlap", any_alignment.AlignmentStrategyOverlap(2, scoring))
 
 def run_all_tests():
 

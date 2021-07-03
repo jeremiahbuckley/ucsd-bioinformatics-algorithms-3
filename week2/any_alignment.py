@@ -8,6 +8,95 @@ _prev_node_is_left_ = '←'
 _prev_node_is_diagonal_ = '↖︎'
 _prev_node_is_zero_ = '0'
 
+
+class AlignmentStrategy:
+    def __init__(self, indel_penalty, scoring):
+        self.indel_penalty = indel_penalty
+        self.scoring = scoring
+        return
+    
+    def init_matrixes(self, nucleotide_h, nucleotide_w):
+        max_vals = []
+        backtrack = []
+
+        for i in range(len(nucleotide_h)+1):
+            vals = []
+            bv = []
+            for j in range(len(nucleotide_w)+1):
+                vals.append(100)
+                bv.append('x')
+            max_vals.append(vals)
+            backtrack.append(bv)
+
+        for i in range(len(nucleotide_h)+1):
+            max_vals[i][0] = self.init_vertical_start_row_value(i)
+            backtrack[i][0] = _prev_node_is_zero_
+        for i in range(len(nucleotide_w)+1):
+            max_vals[0][i] = self.init_horizontal_start_row_value(i)
+            backtrack[0][i] = _prev_node_is_zero_
+            
+        #print()
+        #print_matrix(max_vals)
+        #print_matrix(backtrack)
+
+        return max_vals, backtrack
+
+    def init_horizontal_start_row_value(self, idx):
+        return 0
+    
+    def init_vertical_start_row_value(self, idx):
+        return 0
+
+    def get_max_val_for_loc(self, up_val, left_val, upleft_val, h_idx):
+        return max(up_val, left_val, upleft_val)
+
+    def found_new_max_value(self, current_value, max_value, loc, horizontal_leng, vertical_leng):
+        return current_value >= max_value
+
+    def pad_alignment_strings(self, align_h, align_w, height, width, nucleotide_h, nucleotide_w):
+        return align_h, align_w
+
+
+class AlignmentStrategyGlobal(AlignmentStrategy):
+    def init_horizontal_start_row_value(self, idx):
+        return -1 * self.indel_penalty * idx
+    
+    def init_vertical_start_row_value(self, idx):
+        return -1 * self.indel_penalty * idx
+
+    def pad_alignment_strings(self, align_h, align_w, height, width, nucleotide_h, nucleotide_w):
+        if height == 0 and width != 0:
+            align_h = "-"*(width) + align_h
+            align_w = nucleotide_w[0:width] + align_w
+        if width == 0 and height != 0:
+            align_h = nucleotide_h[0:height] + align_h
+            align_w = "-"*(height) + align_w
+        return align_h, align_w
+
+class AlignmentStrategyLocal(AlignmentStrategy):
+    def get_max_val_for_loc(self, up_val, left_val, upleft_val, h_idx):
+        return max(up_val, left_val, upleft_val, 0)
+
+class AlignmentStrategyFitting(AlignmentStrategy):
+    def init_horizontal_start_row_value(self, idx):
+        return -1 * self.indel_penalty * idx
+
+    def get_max_val_for_loc(self, up_val, left_val, upleft_val, h_idx):
+        mv = max(up_val, left_val, upleft_val)
+        if h_idx == 1:
+            mv = max(0, mv)
+        return mv
+
+    def found_new_max_value(self, current_value, max_value, loc, horizontal_len, vertical_len):
+        return loc[1] == horizontal_len and current_value >= max_value
+
+class AlignmentStrategyOverlap(AlignmentStrategy):
+    def init_horizontal_start_row_value(self, idx):
+        return -1 * self.indel_penalty * idx
+
+    def found_new_max_value(self, current_value, max_value, loc, horizontal_len, veritical_len):
+        return loc[0] == veritical_len and current_value >= max_value
+
 def print_matrix(list_of_lists, str_h, str_v):
     height = len(list_of_lists)
     width = len(list_of_lists[0])
@@ -73,7 +162,7 @@ def simple_scoring(match, mismatch):
 
     return scoring
 
-def outputlcs(backtrack, height, width, nucleotide_h, nucleotide_w, alignment_type):
+def outputlcs(backtrack, height, width, nucleotide_h, nucleotide_w, alignment_strategy):
 
     align_h = ""
     align_w = ""
@@ -98,63 +187,13 @@ def outputlcs(backtrack, height, width, nucleotide_h, nucleotide_w, alignment_ty
             height -= 1
             width -= 1
 
-    if alignment_type == "global":
-        if height == 0 and width != 0:
-            align_h = "-"*(width) + align_h
-            align_w = nucleotide_w[0:width] + align_w
-        if width == 0 and height != 0:
-            align_h = nucleotide_h[0:height] + align_h
-            align_w = "-"*(height) + align_w
+    align_h, align_w = alignment_strategy.pad_alignment_strings(align_h, align_w, height, width, nucleotide_h, nucleotide_w)
 
     #print()
     return align_h, align_w
 
-def lcsbacktrack(nucleotide_h, nucleotide_w, scoring, alignment_type):
-    max_vals = []
-    backtrack = []
-
-    indel_penalty = 0
-    if alignment_type == "global":
-        indel_penalty = 5
-    elif alignment_type == "local":
-        indel_penalty = 5
-    elif alignment_type == "fitting":
-        indel_penalty = 1
-    elif alignment_type == "overlap":
-        indel_penalty = 2
-    else:
-        raise ValueError("Unknown alingment_type {0}".format(alignment_type))
-
-    for i in range(len(nucleotide_h)+1):
-        vals = []
-        bv = []
-        for j in range(len(nucleotide_w)+1):
-            vals.append(100)
-            bv.append('x')
-        max_vals.append(vals)
-        backtrack.append(bv)
-
-    #print()
-    #print_matrix(max_vals)
-    #print_matrix(backtrack)
-
-    for i in range(len(nucleotide_h)+1):
-        init_val = 0
-        # TODO: should this if include "overlap"?
-        if alignment_type == "global":
-            init_val -= indel_penalty*i
-        max_vals[i][0] = init_val
-        backtrack[i][0] = _prev_node_is_zero_
-    for j in range(len(nucleotide_w)+1):
-        init_val = 0
-        if alignment_type == "global" or alignment_type == "fitting" or alignment_type == "overlap":
-            init_val -= indel_penalty*j
-        max_vals[0][j] = init_val
-        backtrack[0][j] = _prev_node_is_zero_
-
-    #print()
-    #print_matrix(max_vals)
-    #print_matrix(backtrack)
+def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
+    max_vals, backtrack = alignment_strategy.init_matrixes(nucleotide_h, nucleotide_w)
 
     max_overall = 0
     max_overall_loc = (0, 0)
@@ -162,37 +201,27 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring, alignment_type):
     for i in range(1, len(nucleotide_h)+1):
         for j in range(1, len(nucleotide_w)+1):
             #print("i:{0} j:{1}".format(str(i), str(j)))
-            match = scoring[nucleotide_w[j-1]][nucleotide_h[i-1]]
+            match = alignment_strategy.scoring[nucleotide_w[j-1]][nucleotide_h[i-1]]
 
-            max_vals[i][j] = max(max_vals[i-1][j] - indel_penalty, \
-                                 max_vals[i][j-1] - indel_penalty, \
-                                 max_vals[i-1][j-1]+match)
-            
-            if alignment_type == "local":
-                max_vals[i][j] = max(0, max_vals[i][j])
-            
-            #if (alignment_type == "fitting" or alignment_type == "overlap") and j == 1 and nucleotide_h[i-1] != nucleotide_w[j-1]:
-            if alignment_type == "fitting" and j == 1 and nucleotide_h[i-1] != nucleotide_w[j-1]:
-                max_vals[i][j] = 0
+            max_vals[i][j] = alignment_strategy.get_max_val_for_loc(max_vals[i-1][j] - alignment_strategy.indel_penalty, \
+                                                                    max_vals[i][j-1] - alignment_strategy.indel_penalty, \
+                                                                    max_vals[i-1][j-1] + match, \
+                                                                    j )
 
-            if max_vals[i][j] == max_vals[i-1][j] - indel_penalty:
+            if max_vals[i][j] == max_vals[i-1][j] - alignment_strategy.indel_penalty:
                 backtrack[i][j] = _prev_node_is_up_
-            elif max_vals[i][j] == max_vals[i][j-1] - indel_penalty:
+            elif max_vals[i][j] == max_vals[i][j-1] - alignment_strategy.indel_penalty:
                 backtrack[i][j] = _prev_node_is_left_
             elif max_vals[i][j] == max_vals[i-1][j-1] + match:
                 backtrack[i][j] = _prev_node_is_diagonal_
             else: # max_vals[i][j] == 0:
                 backtrack[i][j] = _prev_node_is_zero_
 
-            if max_vals[i][j] > max_overall:
-                all_maxes = []
-
-            new_max_val = max_vals[i][j] >= max_overall
-            if alignment_type == "fitting":
-                new_max_val = new_max_val and j == len(nucleotide_w)
-            if alignment_type == "overlap":
-                new_max_val = new_max_val and i == len(nucleotide_h)
+            new_max_val = alignment_strategy.found_new_max_value(max_vals[i][j], max_overall, (i, j), len(nucleotide_w), len(nucleotide_h))
             if new_max_val:
+                if max_vals[i][j] > max_overall:
+                    all_maxes = []
+
                 #print(max_vals[i][j])
                 max_overall = max_vals[i][j]
                 max_overall_loc = (i, j)
@@ -207,7 +236,7 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, scoring, alignment_type):
     #print()
     #print(all_maxes)
     f_score = max_vals[max_overall_loc[0]][max_overall_loc[1]]
-    out_h, out_w = outputlcs(backtrack, max_overall_loc[0], max_overall_loc[1], nucleotide_h, nucleotide_w, alignment_type)
+    out_h, out_w = outputlcs(backtrack, max_overall_loc[0], max_overall_loc[1], nucleotide_h, nucleotide_w, alignment_strategy)
 
     print_matrix(max_vals, nucleotide_w, nucleotide_h)
     print_matrix(backtrack, nucleotide_w, nucleotide_h)
@@ -227,13 +256,13 @@ if __name__ == '__main__':
 
     scoring = {}
     if alignment_type == "global":
-        scoring = load_scoring("./BLOSUM62.txt")
+        alignment_strategy = AlignmentStrategyGlobal(5, load_scoring("./BLOSUM62.txt"))
     elif alignment_type == "local":
-        scoring = load_scoring("./PAM250_scoring.txt")
+        alignment_strategy = AlignmentStrategyLocal(5, load_scoring("./PAM250_scoring.txt"))
     elif alignment_type == "fitting":
-        scoring = simple_scoring(1, -1)
+        alignment_strategy = AlignmentStrategyFitting(1, simple_scoring(1, -1))
     elif alignment_type == "overlap":
-        scoring = simple_scoring(1, -2)
+        alignment_strategy = AlignmentStrategyOverlap(2, simple_scoring(1, -2))
     else:
         raise ValueError("Unexpected alignment type: {0}".format(alignment_type))
 
@@ -241,7 +270,7 @@ if __name__ == '__main__':
         nucleotide_h = f.readline().rstrip()
         nucleotide_w = f.readline().rstrip()
 
-    results = lcsbacktrack(nucleotide_h, nucleotide_w, scoring, alignment_type)
+    results = lcsbacktrack(nucleotide_h, nucleotide_w, alignment_type, alignment_strategy)
     for i in range(3):
         print(results[i])
 
