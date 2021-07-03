@@ -270,7 +270,7 @@ if __name__ == '__main__':
         nucleotide_h = f.readline().rstrip()
         nucleotide_w = f.readline().rstrip()
 
-    results = lcsbacktrack(nucleotide_h, nucleotide_w, alignment_type, alignment_strategy)
+    results = lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy)
     for i in range(3):
         print(results[i])
 
