@@ -6,50 +6,6 @@ import time
 
 import any_alignment
 
-def print_scoring(scoring, keys):
-    print("      " + "    ".join([k for k in keys]))
-    for i in range(len(keys)):
-        val_str = ""
-        for j in range(len(keys)):
-            val_str += " " + str(scoring[keys[i]][keys[j]]).rjust(4)
-        print("{0} {1}".format(keys[i], val_str))
-
-def load_scoring(scoring_file_loc):
-    scoring_strs = []
-    with open(scoring_file_loc) as f:
-        scoring_strs = f.readlines()
-
-    scoring = {}
-    virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
-    for i in range(1, len(scoring_strs)):
-        row = scoring_strs[i].split()
-        key = row[0]
-        row_dict = {}
-        for j in range(1, len(row)):
-            virt_key = virt_keys[j-1]
-            row_dict[virt_key] = int(row[j])
-        scoring[key] = row_dict
-
-    print_scoring(scoring, virt_keys)
-
-    return scoring
-
-def simple_scoring(match, mismatch):
-
-    scoring = {}
-    virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
-    for i in range(len(virt_keys)):
-        key = virt_keys[i]
-        row_dict = {}
-        for j in range(len(virt_keys)):
-            virt_key = virt_keys[j]
-            row_dict[virt_key] = match if i == j else mismatch
-        scoring[key] = row_dict
-
-    print_scoring(scoring, virt_keys)
-
-    return scoring
-
 def test_verify(results, verifyfile):
 
     with open(verifyfile) as f:
@@ -83,16 +39,14 @@ def single_test(input_file, expected_results_file, alignment_type, alignment_str
     test_verify(results, expected_results_file)
 
 def global_tests():
-    scoring = load_scoring("./BLOSUM62.txt")
     for in_f, out_f in [ \
                         ["test/globalalignment.txt", "test/globalalignment_expected_result.txt"], \
                         ["test/global_alignment_test_dataset_2.txt","test/global_alignment_test_dataset_2_expected_result.txt"], \
                         ["test/dataset_247_3.txt","test/dataset_247_3_expected_result.txt"] \
                         ]:
-        single_test(in_f, out_f,"global", any_alignment.AlignmentStrategyGlobal(5, scoring))
+        single_test(in_f, out_f,"global", any_alignment.AlignmentStrategyGlobal(5, True, scoring_filename = "./BLOSUM62.txt"))
 
 def local_tests():
-    scoring = load_scoring("./PAM250_scoring.txt")
     for in_f, out_f in [ \
                         ["test/localalignment.txt", "test/localalignment_expected_result.txt"], \
                         ["test/local_alignment_test_2.txt","test/local_alignment_test_2_expected_result.txt"], \
@@ -100,10 +54,9 @@ def local_tests():
                         ["test/local_alignment_test_4.txt","test/local_alignment_test_4_expected_result.txt"], \
                         ["test/local_alignment_test_5.txt","test/local_alignment_test_5_expected_result.txt"], \
                         ]:
-        single_test(in_f, out_f,"local", any_alignment.AlignmentStrategyLocal(5, scoring))
+        single_test(in_f, out_f,"local", any_alignment.AlignmentStrategyLocal(5, True, scoring_filename = "./PAM250_scoring.txt"))
 
 def fitting_tests():
-    scoring = simple_scoring(1, -1)
     for in_f, out_f in [ \
                         ["test/08_FittingAlignment/inputs/test1.txt", "test/08_FittingAlignment/outputs/test1.txt"], \
                         ["test/08_FittingAlignment/inputs/test2.txt", "test/08_FittingAlignment/outputs/test2.txt"], \
@@ -111,10 +64,9 @@ def fitting_tests():
                         ["test/08_FittingAlignment/inputs/test4.txt", "test/08_FittingAlignment/outputs/test4.txt"], \
 #                        ["test/08_FittingAlignment/inputs/test5.txt", "test/08_FittingAlignment/outputs/test5.txt"], \
                         ]:
-        single_test(in_f, out_f,"fitting", any_alignment.AlignmentStrategyFitting(1, scoring))
+        single_test(in_f, out_f,"fitting", any_alignment.AlignmentStrategyFitting(1, False, scoring_match_value = 1, scoring_mismatch_value = -1))
 
 def overlap_tests():
-    scoring = simple_scoring(1, -2)
     for in_f, out_f in [ \
                         ["test/overlapalignment.txt", "test/overlapalignment_expected_result.txt"], \
                         ["test/09_OverlapAlignment/inputs/test1.txt","test/09_OverlapAlignment/outputs/test1.txt"], \
@@ -125,7 +77,7 @@ def overlap_tests():
 #                        ["test/09_OverlapAlignment/inputs/test6.txt","test/09_OverlapAlignment/outputs/test6.txt"], \
                         ["test/dataset_248_7.txt","test/dataset_248_7_expected_result.txt"], \
                         ]:
-        single_test(in_f, out_f,"overlap", any_alignment.AlignmentStrategyOverlap(2, scoring))
+        single_test(in_f, out_f,"overlap", any_alignment.AlignmentStrategyOverlap(2, False, scoring_match_value = 1, scoring_mismatch_value = -2))
 
 def run_all_tests():
 

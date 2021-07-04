@@ -10,9 +10,12 @@ _prev_node_is_zero_ = '0'
 
 
 class AlignmentStrategy:
-    def __init__(self, indel_penalty, scoring):
+    def __init__(self, indel_penalty, scoring_from_file, scoring_filename = "", scoring_match_value = 1, scoring_mismatch_value = -1):
         self.indel_penalty = indel_penalty
-        self.scoring = scoring
+        if scoring_from_file:
+            self.scoring = self.load_scoring(scoring_filename)
+        else:
+            self.scoring = self.simple_scoring(scoring_match_value, scoring_mismatch_value)
         return
     
     def init_matrixes(self, nucleotide_h, nucleotide_w):
@@ -56,6 +59,51 @@ class AlignmentStrategy:
     def pad_alignment_strings(self, align_h, align_w, height, width, nucleotide_h, nucleotide_w):
         return align_h, align_w
 
+    def print_scoring(self, scoring, keys):
+        print("      " + "    ".join([k for k in keys]))
+        for i in range(len(keys)):
+            val_str = ""
+            for j in range(len(keys)):
+                val_str += " " + str(scoring[keys[i]][keys[j]]).rjust(4)
+            print("{0} {1}".format(keys[i], val_str))
+
+    def load_scoring(self, scoring_file_loc):
+        scoring_strs = []
+        with open(scoring_file_loc) as f:
+            scoring_strs = f.readlines()
+
+        scoring = {}
+        virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
+        for i in range(1, len(scoring_strs)):
+            row = scoring_strs[i].split()
+            key = row[0]
+            row_dict = {}
+            for j in range(1, len(row)):
+                virt_key = virt_keys[j-1]
+                row_dict[virt_key] = int(row[j])
+            scoring[key] = row_dict
+
+        self.print_scoring(scoring, virt_keys)
+
+        return scoring
+
+    def simple_scoring(self, match, mismatch):
+
+        scoring = {}
+        virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
+        for i in range(len(virt_keys)):
+            key = virt_keys[i]
+            row_dict = {}
+            for j in range(len(virt_keys)):
+                virt_key = virt_keys[j]
+                row_dict[virt_key] = match if i == j else mismatch
+            scoring[key] = row_dict
+
+        self.print_scoring(scoring, virt_keys)
+
+        return scoring
+
+
 
 class AlignmentStrategyGlobal(AlignmentStrategy):
     def init_horizontal_start_row_value(self, idx):
@@ -97,6 +145,9 @@ class AlignmentStrategyOverlap(AlignmentStrategy):
     def found_new_max_value(self, current_value, max_value, loc, horizontal_len, veritical_len):
         return loc[0] == veritical_len and current_value >= max_value
 
+
+
+
 def print_matrix(list_of_lists, str_h, str_v):
     height = len(list_of_lists)
     width = len(list_of_lists[0])
@@ -118,49 +169,9 @@ def print_matrix(list_of_lists, str_h, str_v):
         else:
             print("{0}   {1}".format(str_v[i-1], "  ".join([str(n).rjust(5) for n in list_of_lists[i]])))
 
-def print_scoring(scoring, keys):
-    print("      " + "    ".join([k for k in keys]))
-    for i in range(len(keys)):
-        val_str = ""
-        for j in range(len(keys)):
-            val_str += " " + str(scoring[keys[i]][keys[j]]).rjust(4)
-        print("{0} {1}".format(keys[i], val_str))
 
-def load_scoring(scoring_file_loc):
-    scoring_strs = []
-    with open(scoring_file_loc) as f:
-        scoring_strs = f.readlines()
 
-    scoring = {}
-    virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
-    for i in range(1, len(scoring_strs)):
-        row = scoring_strs[i].split()
-        key = row[0]
-        row_dict = {}
-        for j in range(1, len(row)):
-            virt_key = virt_keys[j-1]
-            row_dict[virt_key] = int(row[j])
-        scoring[key] = row_dict
 
-    print_scoring(scoring, virt_keys)
-
-    return scoring
-
-def simple_scoring(match, mismatch):
-
-    scoring = {}
-    virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
-    for i in range(len(virt_keys)):
-        key = virt_keys[i]
-        row_dict = {}
-        for j in range(len(virt_keys)):
-            virt_key = virt_keys[j]
-            row_dict[virt_key] = match if i == j else mismatch
-        scoring[key] = row_dict
-
-    print_scoring(scoring, virt_keys)
-
-    return scoring
 
 def outputlcs(backtrack, height, width, nucleotide_h, nucleotide_w, alignment_strategy):
 
@@ -246,6 +257,9 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
 
     return f_score, out_h, out_w
 
+
+
+
 if __name__ == '__main__':
     start = time.process_time()
 
@@ -256,13 +270,13 @@ if __name__ == '__main__':
 
     scoring = {}
     if alignment_type == "global":
-        alignment_strategy = AlignmentStrategyGlobal(5, load_scoring("./BLOSUM62.txt"))
+        alignment_strategy = AlignmentStrategyGlobal(5, True, scoring_filename = "./BLOSUM62.txt")
     elif alignment_type == "local":
-        alignment_strategy = AlignmentStrategyLocal(5, load_scoring("./PAM250_scoring.txt"))
+        alignment_strategy = AlignmentStrategyLocal(5, True, scoring_filename = "./PAM250_scoring.txt")
     elif alignment_type == "fitting":
-        alignment_strategy = AlignmentStrategyFitting(1, simple_scoring(1, -1))
+        alignment_strategy = AlignmentStrategyFitting(1, False, scoring_match_value = 1, scoring_mismatch_value = -1)
     elif alignment_type == "overlap":
-        alignment_strategy = AlignmentStrategyOverlap(2, simple_scoring(1, -2))
+        alignment_strategy = AlignmentStrategyOverlap(2, False, scoring_match_value = 1, scoring_mismatch_value = -2)
     else:
         raise ValueError("Unexpected alignment type: {0}".format(alignment_type))
 
@@ -271,6 +285,7 @@ if __name__ == '__main__':
         nucleotide_w = f.readline().rstrip()
 
     results = lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy)
+
     for i in range(3):
         print(results[i])
 
