@@ -1,0 +1,8 @@
+0
+ACT
+A-T
+
+# alternate possibility
+#0
+#CT
+#AT
