@@ -81,6 +81,8 @@ def overlap_tests():
 
 def affine_gap_tests():
     for in_f, out_f in [ \
+                        ["test/10_AffineGapPenalties/inputs/test1.txt","test/10_AffineGapPenalties/outputs/test1.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/test2.txt","test/10_AffineGapPenalties/outputs/test2.txt"], \
                         ["test/affine_gap.txt", "test/affine_gap_expected_result.txt"], \
                         ]:
         single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(1, 11, True, scoring_filename = "./BLOSUM62.txt"))
@@ -88,13 +90,13 @@ def affine_gap_tests():
 
 def run_all_tests():
 
-    global_tests()
+    # global_tests()
     
-    local_tests()
+    # local_tests()
 
-    fitting_tests()
+    # fitting_tests()
 
-    overlap_tests()
+    # overlap_tests()
 
     affine_gap_tests()
 
