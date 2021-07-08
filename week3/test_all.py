@@ -81,22 +81,33 @@ def overlap_tests():
 
 def affine_gap_tests():
     for in_f, out_f in [ \
+                        ["test/dataset_249_8.txt", "test/dataset_249_8_expected_result.txt"], \
+                        ["test/dataset_249_8_2.txt", "test/dataset_249_8_2_expected_result.txt"], \
+                        ["test/affine_gap.txt", "test/affine_gap_expected_result.txt"], \
+                        ["test/affine_gap_2.txt", "test/affine_gap_2_expected_result.txt"], \
                         ["test/10_AffineGapPenalties/inputs/test1.txt","test/10_AffineGapPenalties/outputs/test1.txt"], \
                         ["test/10_AffineGapPenalties/inputs/test2.txt","test/10_AffineGapPenalties/outputs/test2.txt"], \
-                        ["test/affine_gap.txt", "test/affine_gap_expected_result.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/test3.txt","test/10_AffineGapPenalties/outputs/test3.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/test4.txt","test/10_AffineGapPenalties/outputs/test4.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/test5.txt","test/10_AffineGapPenalties/outputs/test5.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/test6.txt","test/10_AffineGapPenalties/outputs/test6.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/test7.txt","test/10_AffineGapPenalties/outputs/test7.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/test8.txt","test/10_AffineGapPenalties/outputs/test8.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/sample.txt","test/10_AffineGapPenalties/outputs/sample.txt"], \
                         ]:
         single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(1, 11, True, scoring_filename = "./BLOSUM62.txt"))
+        # single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(-4, 0, True, scoring_filename = "./BLOSUM62.txt"))
 
 
 def run_all_tests():
 
-    # global_tests()
+    global_tests()
     
-    # local_tests()
+    local_tests()
 
-    # fitting_tests()
+    fitting_tests()
 
-    # overlap_tests()
+    overlap_tests()
 
     affine_gap_tests()
 

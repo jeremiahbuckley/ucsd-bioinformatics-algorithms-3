@@ -1,3 +1,6 @@
--7
+-21
 AGCTAGCCTAG
--G-T-------
+GT---------
+#-7
+#AGCTAGCCTAG
+#-G-T-------

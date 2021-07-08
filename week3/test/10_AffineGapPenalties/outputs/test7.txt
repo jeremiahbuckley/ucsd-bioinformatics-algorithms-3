@@ -1,3 +1,6 @@
--7
--A--------A
+-15
+---------AA
 CAGTGTCAGTA
+#-7
+#-A--------A
+#CAGTGTCAGTA

@@ -1,3 +1,6 @@
--8
+-10
 CAGGT
-TAC--
+TA--C
+#-8
+#CAGGT
+#TAC--

@@ -15,7 +15,9 @@ _prev_node_is_zero_ = '0'
 
 
 class AlignmentStrategy:
-    def __init__(self, indel_penalty, scoring_from_file, scoring_filename = "", scoring_match_value = 1, scoring_mismatch_value = -1):
+    def __init__(self, indel_penalty, \
+                 scoring_from_file, scoring_filename = "", \
+                 scoring_match_value = 1, scoring_mismatch_value = -1):
         self.indel_penalty = indel_penalty
         if scoring_from_file:
             self.scoring = self.load_scoring(scoring_filename)
@@ -23,7 +25,7 @@ class AlignmentStrategy:
             self.scoring = self.simple_scoring(scoring_match_value, scoring_mismatch_value)
         self.three_level_dag = False
         print("indel: {0}".format(str(self.indel_penalty)))
-    
+
     def init_matrixes(self, nucleotide_h, nucleotide_w):
         lower_max_vals = []
         middle_max_vals = []
@@ -67,21 +69,27 @@ class AlignmentStrategy:
             lower_backtrack[0][i] = _prev_node_is_zero_
             middle_backtrack[0][i] = _prev_node_is_zero_
             upper_backtrack[0][i] = _prev_node_is_zero_
-            
+
         #print()
         #print_matrix(middle_max_vals)
         #print_matrix(backtrack)
 
-        return lower_backtrack, middle_backtrack, upper_backtrack, lower_max_vals, middle_max_vals, upper_max_vals
+        return lower_backtrack, middle_backtrack, upper_backtrack, \
+               lower_max_vals, middle_max_vals, upper_max_vals
 
     def init_horizontal_start_row_value(self, matrix_level, idx):
         return 0
-    
+
     def init_vertical_start_row_value(self, matrix_level, idx):
         return 0
 
-    def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, v_idx, h_idx, match):
-        return [-math.inf, max(middle_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[1] - self.indel_penalty, middle_matrix_vals[2] + match), -math.inf]
+    def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, \
+                            v_idx, h_idx, match):
+        return [-math.inf, \
+                max(middle_matrix_vals[0] - self.indel_penalty, \
+                    middle_matrix_vals[1] - self.indel_penalty, \
+                    middle_matrix_vals[2] + match), \
+                -math.inf]
 
     def found_new_max_value(self, current_value, max_value, loc, horizontal_len, vertical_len):
         return current_value >= max_value
@@ -90,12 +98,12 @@ class AlignmentStrategy:
         return align_h, align_w
 
     def print_scoring(self, scoring, keys):
-        print("      " + "    ".join([k for k in keys]))
-        for i in range(len(keys)):
+        print("      " + "    ".join(list(keys)))
+        for v_key in keys:
             val_str = ""
-            for j in range(len(keys)):
-                val_str += " " + str(scoring[keys[i]][keys[j]]).rjust(4)
-            print("{0} {1}".format(keys[i], val_str))
+            for h_key in keys:
+                val_str += " " + str(scoring[v_key][h_key]).rjust(4)
+            print("{0} {1}".format(v_key, val_str))
 
     def load_scoring(self, scoring_file_loc):
         scoring_strs = []
@@ -121,13 +129,11 @@ class AlignmentStrategy:
 
         scoring = {}
         virt_keys = 'ACDEFGHIKLMNPQRSTVWY'
-        for i in range(len(virt_keys)):
-            key = virt_keys[i]
+        for v_key in virt_keys:
             row_dict = {}
-            for j in range(len(virt_keys)):
-                virt_key = virt_keys[j]
-                row_dict[virt_key] = match if i == j else mismatch
-            scoring[key] = row_dict
+            for h_key in virt_keys:
+                row_dict[h_key] = match if v_key == h_key else mismatch
+            scoring[v_key] = row_dict
 
         self.print_scoring(scoring, virt_keys)
 
@@ -140,7 +146,7 @@ class AlignmentStrategyGlobal(AlignmentStrategy):
         if matrix_level == 1:
             return -1 * self.indel_penalty * idx
         return -math.inf
-    
+
     def init_vertical_start_row_value(self, matrix_level, idx):
         if matrix_level == 1:
             return -1 * self.indel_penalty * idx
@@ -181,8 +187,8 @@ class AlignmentStrategyOverlap(AlignmentStrategy):
             return -1 * self.indel_penalty * idx
         return -math.inf
 
-    def found_new_max_value(self, current_value, max_value, loc, horizontal_len, veritical_len):
-        return loc[0] == veritical_len and current_value >= max_value
+    def found_new_max_value(self, current_value, max_value, loc, horizontal_len, vertical_len):
+        return loc[0] == vertical_len and current_value >= max_value
 
 class AlignmentStrategyAffineGap(AlignmentStrategy):
     def __init__(self, indel_penalty, gap_initiation_penalty, scoring_from_file, scoring_filename = "", scoring_match_value = 1, scoring_mismatch_value = -1):
@@ -192,12 +198,6 @@ class AlignmentStrategyAffineGap(AlignmentStrategy):
         print("gap init: {0}".format(str(self.gap_initiation_penalty)))
 
     def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, v_idx, h_idx, match):
-            # max_results = alignment_strategy.get_max_val_for_loc([lower_max_vals[i-1][j], lower_max_vals[i][j]], \
-            #                                                      [middle_max_vals[i-1][j], \
-            #                                                       middle_max_vals[i][j-1], \
-            #                                                       middle_max_vals[i-1][j-1]], \
-            #                                                      [upper_max_vals[i][j-1], upper_max_vals[i][j]], \
-            #                                                      i, j, match )
         max_for_lower = max(lower_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[0] - self.gap_initiation_penalty)
         max_for_upper = max(upper_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[1] - self.gap_initiation_penalty)
         max_for_middle = max(max_for_lower, max_for_upper, middle_matrix_vals[2] + match)
@@ -207,23 +207,19 @@ class AlignmentStrategyAffineGap(AlignmentStrategy):
         if matrix_level > 0:
             val = 0
             if idx > 0:
-                val -= self.gap_initiation_penalty
-            if idx > 1:
-                val -= (self.indel_penalty * (idx - 1))
+                val -= (self.gap_initiation_penalty + (self.indel_penalty * (idx - 1)))
             return val
-        else:
-            return -math.inf
-    
+
+        return -math.inf
+
     def init_vertical_start_row_value(self, matrix_level, idx):
         if matrix_level < 2:
             val = 0
             if idx > 0:
-                val -= self.gap_initiation_penalty
-            if idx > 1:
-                val -= (self.indel_penalty * (idx - 1))
+                val -= (self.gap_initiation_penalty + (self.indel_penalty * (idx - 1)))
             return val
-        else:
-            return -math.inf
+
+        return -math.inf
 
     def pad_alignment_strings(self, align_h, align_w, height, width, nucleotide_h, nucleotide_w):
         print("padding " + str(height) + " " + str(width))
@@ -237,8 +233,8 @@ class AlignmentStrategyAffineGap(AlignmentStrategy):
 
     def found_new_max_value(self, current_value, max_value, loc, horizontal_len, vertical_len):
         possible = super().found_new_max_value(current_value, max_value, loc, horizontal_len, vertical_len)
-        # if loc[1] == horizontal_len and loc[0] == vertical_len:
-        #     return True
+        if loc[1] == horizontal_len and loc[0] == vertical_len:
+            return True
         return possible
 
 
@@ -246,30 +242,61 @@ def print_matrix(list_of_lists, str_h, str_v):
     height = len(list_of_lists)
     width = len(list_of_lists[0])
 
-    if height > 80 or width > 80:
-        print("Matrix will be too large to analyze. Not printing.")
-        return
+    if height > 20 or width > 20:
+        print("Matrix will be too large to analyze.\nTruncating to two subgraphs of first 10 and last 10.")
+
+        print("first 10")
+        out_str = "           {0}".format("  ".join([ch.rjust(5) for ch in str_h]))
+        print(out_str[:79])
+        for i in range(10):
+            #print(list_of_lists[i])
+            #print(str_v[i])
+            #print()
+            out_str = "  ".join([str(n).rjust(5) for n in list_of_lists[i]])
+            out_str = out_str[:79]
+            out_str = out_str.replace("↖︎", " ↖︎") #on the terminal this character is incorrectly right-justified by one-too-few spaces, this is not true n other formats
+            if i == 0:
+                print("    {0}".format(out_str))
+            else:
+                print("{0}   {1}".format(str_v[i-1], out_str))
+
+        print("last 10")
+        out_str = "           {0}".format("  ".join([ch.rjust(5) for ch in str_h]))
+        print("    " + out_str[-75:])
+        for i in range(height-10, height):
+            #print(list_of_lists[i])
+            #print(str_v[i])
+            #print()
+            out_str = "  ".join([str(n).rjust(5) for n in list_of_lists[i]])
+            out_str = out_str[-75:]
+            out_str = out_str.replace("↖︎", " ↖︎") #on the terminal this character is incorrectly right-justified by one-too-few spaces, this is not true n other formats
+            if i == 0:
+                print("    {0}".format(out_str))
+            else:
+                print("{0}   {1}".format(str_v[i-1], out_str))
 
     #print()
     #print(len(str_v))
     #print(len(list_of_lists))
-    print("           {0}".format("  ".join([ch.rjust(5) for ch in str_h])))
-    for i in range(height):
-        #print(list_of_lists[i])
-        #print(str_v[i])
-        #print()
-        out_str = "  ".join([str(n).rjust(5) for n in list_of_lists[i]])
-        out_str = out_str.replace("↖︎", " ↖︎") #on the terminal this character is incorrectly right-justified by one-too-few spaces, this is not true n other formats
-        if i == 0:
-            print("    {0}".format(out_str))
-        else:
-            print("{0}   {1}".format(str_v[i-1], out_str))
+    else:
+        print("           {0}".format("  ".join([ch.rjust(5) for ch in str_h])))
+        for i in range(height):
+            #print(list_of_lists[i])
+            #print(str_v[i])
+            #print()
+            out_str = "  ".join([str(n).rjust(5) for n in list_of_lists[i]])
+            out_str = out_str.replace("↖︎", " ↖︎") #on the terminal this character is incorrectly right-justified by one-too-few spaces, this is not true n other formats
+            if i == 0:
+                print("    {0}".format(out_str))
+            else:
+                print("{0}   {1}".format(str_v[i-1], out_str))
 
 
 
 
 
-def outputlcs(lower_backtrack, middle_backtrack, upper_backtrack, height, width, nucleotide_h, nucleotide_w, alignment_strategy):
+def outputlcs(backtrack_matrices, max_location, nucleotide_h, nucleotide_w, alignment_strategy):
+
 
     align_h = ""
     align_w = ""
@@ -277,14 +304,14 @@ def outputlcs(lower_backtrack, middle_backtrack, upper_backtrack, height, width,
     #print(nucleotide_h)
     #print(nucleotide_w)
     if alignment_strategy.three_level_dag:
-        level = 1
-        if height != len(nucleotide_h) and width == len(nucleotide_w):
-            align_h = nucleotide_h[height]
-            align_w = "-" * (len(nucleotide_h) - height)
-        if height == len(nucleotide_h) and width != len(nucleotide_w):
-            align_h = "-" * (len(nucleotide_w) - width)
-            align_w = nucleotide_w[width]
+        lower_backtrack = backtrack_matrices[0]
+        middle_backtrack = backtrack_matrices[1]
+        upper_backtrack = backtrack_matrices[2]
+        height = max_location[0]
+        width = max_location[1]
+        level = max_location[2]
         while height != 0 and width != 0:
+            # pdb.set_trace()
             if level == 1:
                 if middle_backtrack[height][width] == _prev_node_is_zero_:
                     height = 0
@@ -303,26 +330,29 @@ def outputlcs(lower_backtrack, middle_backtrack, upper_backtrack, height, width,
             elif level == 0:
                 align_h = "-" + align_h
                 align_w = nucleotide_w[width-1] + align_w
-                width -= 1
-                if lower_backtrack[height][width] == _prev_node_is_left_:
-                    pass
-                elif lower_backtrack[height][width] == _prev_node_is_middle_level_:
+                if lower_backtrack[height][width] == _prev_node_is_middle_level_:
+                    width -= 1
                     level = 1
+                elif lower_backtrack[height][width] == _prev_node_is_left_:
+                    width -= 1
                 else:
                     ValueError("Unexpected value. Level {0}, Value: {1}".format(str(level), middle_backtrack[height][width]))
             elif level == 2:
                 align_h = nucleotide_h[height-1] + align_h
                 align_w = "-" + align_w
-                height -= 1
-                if upper_backtrack[height][width] == _prev_node_is_up_:
-                    pass
-                elif upper_backtrack[height][width] == _prev_node_is_middle_level_:
+                if upper_backtrack[height][width] == _prev_node_is_middle_level_:
+                    height -= 1
                     level = 1
+                elif upper_backtrack[height][width] == _prev_node_is_up_:
+                    height -= 1
                 else:
                     ValueError("Unexpected value. Level {0}, Value: {1}".format(str(level), middle_backtrack[height][width]))
             else:
                 ValueError("Unexpected value. Level {0}, Value: {1}".format(str(level), middle_backtrack[height][width]))
     else:
+        middle_backtrack = backtrack_matrices[0]
+        height = max_location[0]
+        width = max_location[1]
         while height != 0 and width != 0:
             if middle_backtrack[height][width] == _prev_node_is_zero_:
                 height = 0
@@ -351,8 +381,9 @@ def outputlcs(lower_backtrack, middle_backtrack, upper_backtrack, height, width,
 def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
     lower_backtrack, middle_backtrack, upper_backtrack, lower_max_vals, middle_max_vals, upper_max_vals = alignment_strategy.init_matrixes(nucleotide_h, nucleotide_w)
 
-    max_overall = 0
+    max_overall = -math.inf
     max_overall_loc = (0, 0)
+    max_overall_level = 1
     all_maxes = []
     for i in range(1, len(nucleotide_h)+1):
         for j in range(1, len(nucleotide_w)+1):
@@ -360,8 +391,8 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
             match = alignment_strategy.scoring[nucleotide_w[j-1]][nucleotide_h[i-1]]
 
             max_results = alignment_strategy.get_max_val_for_loc([lower_max_vals[i][j - 1], lower_max_vals[i][j]], \
-                                                                 [middle_max_vals[i-1][j], \
-                                                                  middle_max_vals[i][j-1], \
+                                                                 [middle_max_vals[i][j-1], \
+                                                                  middle_max_vals[i-1][j], \
                                                                   middle_max_vals[i-1][j-1]], \
                                                                  [upper_max_vals[i-1][j], upper_max_vals[i][j]], \
                                                                  i, j, match )
@@ -372,24 +403,30 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
                 upper_max_vals[i][j] = max_results[2]
 
             if alignment_strategy.three_level_dag:
-                if middle_max_vals[i][j] == upper_max_vals[i][j]:
+                if middle_max_vals[i][j] == middle_max_vals[i-1][j-1] + match:
+                    middle_backtrack[i][j] = _prev_node_is_diagonal_
+                elif middle_max_vals[i][j] == upper_max_vals[i][j]:
                     middle_backtrack[i][j] = _prev_node_is_upper_level_up_
                 elif middle_max_vals[i][j] == lower_max_vals[i][j]:
                     middle_backtrack[i][j] = _prev_node_is_lower_level_left_
-                elif middle_max_vals[i][j] == middle_max_vals[i-1][j-1] + match:
-                    middle_backtrack[i][j] = _prev_node_is_diagonal_
-                else: # max_vals[i][j] == 0:
+                elif middle_max_vals[i][j] == 0:
                     middle_backtrack[i][j] = _prev_node_is_zero_
+                else:
+                    ValueError("Unexpected value, middle_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(middle_max_vals[i][j])))
 
                 if upper_max_vals[i][j] == upper_max_vals[i-1][j] - alignment_strategy.indel_penalty:
                     upper_backtrack[i][j] = _prev_node_is_up_
-                else:
+                elif upper_max_vals[i][j] == middle_max_vals[i-1][j] - alignment_strategy.gap_initiation_penalty:
                     upper_backtrack[i][j] = _prev_node_is_middle_level_
-                
+                else:
+                    ValueError("Unexpected value, uppper_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(upper_max_vals[i][j])))
+
                 if lower_max_vals[i][j] == lower_max_vals[i][j-1] - alignment_strategy.indel_penalty:
                     lower_backtrack[i][j] = _prev_node_is_left_
-                else:
+                elif lower_max_vals[i][j] == middle_max_vals[i][j-1] - alignment_strategy.gap_initiation_penalty:
                     lower_backtrack[i][j] = _prev_node_is_middle_level_
+                else:
+                    ValueError("Unexpected value, lower_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(lower_max_vals[i][j])))
             else:
                 if middle_max_vals[i][j] == middle_max_vals[i-1][j] - alignment_strategy.indel_penalty:
                     middle_backtrack[i][j] = _prev_node_is_up_
@@ -397,29 +434,61 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
                     middle_backtrack[i][j] = _prev_node_is_left_
                 elif middle_max_vals[i][j] == middle_max_vals[i-1][j-1] + match:
                     middle_backtrack[i][j] = _prev_node_is_diagonal_
-                else: # max_vals[i][j] == 0:
+                elif middle_max_vals[i][j] == 0:
                     middle_backtrack[i][j] = _prev_node_is_zero_
+                else:
+                    ValueError("Unexpected value, middle_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(middle_max_vals[i][j])))
 
-            new_max_val = alignment_strategy.found_new_max_value(middle_max_vals[i][j], max_overall, (i, j), len(nucleotide_w), len(nucleotide_h))
-            if new_max_val:
-                if middle_max_vals[i][j] > max_overall:
-                    all_maxes = []
+            if i > 0 and j > 0:
+                new_max_val = alignment_strategy.found_new_max_value(middle_max_vals[i][j], max_overall, (i, j), len(nucleotide_w), len(nucleotide_h))
+                if new_max_val:
+                    if middle_max_vals[i][j] > max_overall:
+                        all_maxes = []
 
-                #print(max_vals[i][j])
-                max_overall = middle_max_vals[i][j]
-                max_overall_loc = (i, j)
-                all_maxes.append(max_overall_loc)
-                # still have to figure out backtrack
+                    #print(max_vals[i][j])
+                    if alignment_strategy.three_level_dag:
+                        max_overall = max(lower_max_vals[i][j], middle_max_vals[i][j], upper_max_vals[i][j])
+                        if max_overall == upper_max_vals[i][j]:
+                            max_overall_level = 2
+                        elif max_overall == middle_max_vals[i][j]:
+                            max_overall_level = 1
+                        elif max_overall == lower_max_vals[i][j]:
+                            max_overall_level = 0
+                        else:
+                            ValueError("Unexpected max value {0}. Possible values were: {1}, {2}, {3}".format(str(max_overall), str(lower_max_vals[i][j]), str(middle_max_vals[i][j]), str(upper_max_vals[i][j])))
+                    else:
+                        max_overall = middle_max_vals[i][j]
+                    max_overall_loc = (i, j)
+                    all_maxes.append(max_overall_loc)
+                    # still have to figure out backtrack
 
         #print()
         #print_matrix(max_vals)
         #print_matrix(backtrack)
-    
+
 
     #print()
     #print(all_maxes)
     f_score = middle_max_vals[max_overall_loc[0]][max_overall_loc[1]]
-    out_h, out_w = outputlcs(lower_backtrack, middle_backtrack, upper_backtrack, max_overall_loc[0], max_overall_loc[1], nucleotide_h, nucleotide_w, alignment_strategy)
+    if alignment_strategy.three_level_dag:
+        if max_overall_loc[0] < len(nucleotide_h) and max_overall_loc[1] == len(nucleotide_w):
+            f_score = upper_max_vals[len(nucleotide_h)][len(nucleotide_w)]
+        if max_overall_loc[1] < len(nucleotide_w) and max_overall_loc[0] == len(nucleotide_h):
+            f_score = lower_max_vals[len(nucleotide_h)][len(nucleotide_w)]
+
+    backtrack_matrices = []
+    max_location = []
+    max_location.append(max_overall_loc[0])
+    max_location.append(max_overall_loc[1])
+    if alignment_strategy.three_level_dag:
+        max_location.append(max_overall_level)
+        backtrack_matrices.append(lower_backtrack)
+        backtrack_matrices.append(middle_backtrack)
+        backtrack_matrices.append(upper_backtrack)
+    else:
+        backtrack_matrices.append(middle_backtrack)
+
+    out_h, out_w = outputlcs(backtrack_matrices, max_location, nucleotide_h, nucleotide_w, alignment_strategy)
 
     if alignment_strategy.three_level_dag:
         print()
@@ -456,15 +525,20 @@ if __name__ == '__main__':
 
     scoring = {}
     if alignment_type == "global":
-        alignment_strategy = AlignmentStrategyGlobal(5, True, scoring_filename = "./BLOSUM62.txt")
+        alignment_strategy = AlignmentStrategyGlobal(5, \
+                                 True, scoring_filename = "./BLOSUM62.txt")
     elif alignment_type == "local":
-        alignment_strategy = AlignmentStrategyLocal(5, True, scoring_filename = "./PAM250_scoring.txt")
+        alignment_strategy = AlignmentStrategyLocal(5, \
+                                 True, scoring_filename = "./PAM250_scoring.txt")
     elif alignment_type == "fitting":
-        alignment_strategy = AlignmentStrategyFitting(1, False, scoring_match_value = 1, scoring_mismatch_value = -1)
+        alignment_strategy = AlignmentStrategyFitting(1, \
+                                 False, scoring_match_value = 1, scoring_mismatch_value = -1)
     elif alignment_type == "overlap":
-        alignment_strategy = AlignmentStrategyOverlap(2, False, scoring_match_value = 1, scoring_mismatch_value = -2)
+        alignment_strategy = AlignmentStrategyOverlap(2, \
+                                 False, scoring_match_value = 1, scoring_mismatch_value = -2)
     elif alignment_type == "affine_gap":
-        alignment_strategy = AlignmentStrategyAffineGap(1, 11, True, scoring_filename = "./BLOSUM62.txt")
+        alignment_strategy = AlignmentStrategyAffineGap(1, 11, \
+                                 True, scoring_filename = "./BLOSUM62.txt")
     else:
         raise ValueError("Unexpected alignment type: {0}".format(alignment_type))
 
