@@ -73,13 +73,32 @@ class AlignmentStrategy:
     def init_vertical_start_row_value(self, matrix_level, idx):
         return 0
 
-    def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, \
+    def get_max_val_for_loc(self, max_val_matrices, \
                             v_idx, h_idx, match):
+        middle_matrix_vals = max_val_matrices[0]
         return [-math.inf, \
-                max(middle_matrix_vals[0] - self.indel_penalty, \
-                    middle_matrix_vals[1] - self.indel_penalty, \
-                    middle_matrix_vals[2] + match), \
+                max(middle_matrix_vals[v_idx-1][h_idx] - self.indel_penalty, \
+                    middle_matrix_vals[v_idx-1][h_idx-1] + match, \
+                    middle_matrix_vals[v_idx][h_idx-1] - self.indel_penalty), \
                 -math.inf]
+    
+    def assign_matrix_vals(self, max_vals_matrices, backtrack_matrices, max_results, i, j, match):
+        middle_max_vals = max_vals_matrices[0]
+        middle_backtrack = backtrack_matrices[0]
+
+        middle_max_vals[i][j] = max_results[1]
+
+        if middle_max_vals[i][j] == middle_max_vals[i-1][j] - self.indel_penalty:
+            middle_backtrack[i][j] = _prev_node_is_up_
+        elif middle_max_vals[i][j] == middle_max_vals[i][j-1] - self.indel_penalty:
+            middle_backtrack[i][j] = _prev_node_is_left_
+        elif middle_max_vals[i][j] == middle_max_vals[i-1][j-1] + match:
+            middle_backtrack[i][j] = _prev_node_is_diagonal_
+        elif middle_max_vals[i][j] == 0:
+            middle_backtrack[i][j] = _prev_node_is_zero_
+        else:
+            ValueError("Unexpected value, middle_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(middle_max_vals[i][j])))
+
 
     def found_new_max_value(self, current_value, max_value, loc, horizontal_len, vertical_len):
         return current_value >= max_value
@@ -180,19 +199,25 @@ class AlignmentStrategyGlobal(AlignmentStrategy):
         return align_h, align_w
 
 class AlignmentStrategyLocal(AlignmentStrategy):
-    def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, v_idx, h_idx, match):
-        m = max(middle_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[1] - self.indel_penalty, middle_matrix_vals[2] + match)
+    def get_max_val_for_loc(self, max_val_matrices, v_idx, h_idx, match):
+        middle_matrix_vals = max_val_matrices[0]
+        m = max(middle_matrix_vals[v_idx-1][h_idx] - self.indel_penalty, \
+                middle_matrix_vals[v_idx-1][h_idx-1] + match, \
+                middle_matrix_vals[v_idx][h_idx-1] - self.indel_penalty)
         return [-math.inf, max(m, 0), -math.inf]
 
 class AlignmentStrategyFitting(AlignmentStrategy):
     def init_horizontal_start_row_value(self, matrix_level, idx):
         return -1 * self.indel_penalty * idx
 
-    def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, v_idx, h_idx, match):
-        mv = max(middle_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[1] - self.indel_penalty, middle_matrix_vals[2] + match)
+    def get_max_val_for_loc(self, max_val_matrices, v_idx, h_idx, match):
+        middle_matrix_vals = max_val_matrices[0]
+        m = max(middle_matrix_vals[v_idx-1][h_idx] - self.indel_penalty, \
+                middle_matrix_vals[v_idx-1][h_idx-1] + match, \
+                middle_matrix_vals[v_idx][h_idx-1] - self.indel_penalty)
         if h_idx == 1:
-            mv = max(0, mv)
-        return [-math.inf, mv, -math.inf]
+            m = max(0, m)
+        return [-math.inf, m, -math.inf]
 
     def found_new_max_value(self, current_value, max_value, loc, horizontal_len, vertical_len):
         return loc[1] == horizontal_len and current_value >= max_value
@@ -219,10 +244,16 @@ class AlignmentStrategyAffineGap(AlignmentStrategy):
             mv_bt_pairs.append([max_vals, backtrack])
         return mv_bt_pairs
         
-    def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, v_idx, h_idx, match):
-        max_for_lower = max(lower_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[0] - self.gap_initiation_penalty)
-        max_for_upper = max(upper_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[1] - self.gap_initiation_penalty)
-        max_for_middle = max(max_for_lower, max_for_upper, middle_matrix_vals[2] + match)
+    def get_max_val_for_loc(self, max_val_matrices, v_idx, h_idx, match):
+        lower_matrix_vals = max_val_matrices[0]
+        middle_matrix_vals = max_val_matrices[1]
+        upper_matrix_vals = max_val_matrices[2]
+        max_for_lower = max(lower_matrix_vals[v_idx][h_idx-1] - self.indel_penalty, \
+                            middle_matrix_vals[v_idx][h_idx-1] - self.gap_initiation_penalty)
+        max_for_upper = max(upper_matrix_vals[v_idx-1][h_idx] - self.indel_penalty, \
+                            middle_matrix_vals[v_idx-1][h_idx] - self.gap_initiation_penalty)
+        max_for_middle = max(max_for_lower, max_for_upper, \
+                             middle_matrix_vals[v_idx-1][h_idx-1] + match)
         return [max_for_lower, max_for_middle, max_for_upper]
 
     def init_horizontal_start_row_value(self, matrix_level, idx):
@@ -321,6 +352,43 @@ class AlignmentStrategyAffineGap(AlignmentStrategy):
 
         return align_h, align_w
 
+    def assign_matrix_vals(self, max_vals_matrices, backtrack_matrices, max_results, i, j, match):
+        lower_max_vals = max_vals_matrices[0]
+        middle_max_vals = max_vals_matrices[1]
+        upper_max_vals = max_vals_matrices[2]
+        lower_backtrack = backtrack_matrices[0]
+        middle_backtrack = backtrack_matrices[1]
+        upper_backtrack = backtrack_matrices[2]
+
+        middle_max_vals[i][j] = max_results[1]
+        lower_max_vals[i][j] = max_results[0]
+        upper_max_vals[i][j] = max_results[2]
+
+        if middle_max_vals[i][j] == middle_max_vals[i-1][j-1] + match:
+            middle_backtrack[i][j] = _prev_node_is_diagonal_
+        elif middle_max_vals[i][j] == upper_max_vals[i][j]:
+            middle_backtrack[i][j] = _prev_node_is_upper_level_up_
+        elif middle_max_vals[i][j] == lower_max_vals[i][j]:
+            middle_backtrack[i][j] = _prev_node_is_lower_level_left_
+        elif middle_max_vals[i][j] == 0:
+            middle_backtrack[i][j] = _prev_node_is_zero_
+        else:
+            ValueError("Unexpected value, middle_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(middle_max_vals[i][j])))
+
+        if upper_max_vals[i][j] == upper_max_vals[i-1][j] - self.indel_penalty:
+            upper_backtrack[i][j] = _prev_node_is_up_
+        elif upper_max_vals[i][j] == middle_max_vals[i-1][j] - self.gap_initiation_penalty:
+            upper_backtrack[i][j] = _prev_node_is_middle_level_
+        else:
+            ValueError("Unexpected value, uppper_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(upper_max_vals[i][j])))
+
+        if lower_max_vals[i][j] == lower_max_vals[i][j-1] - self.indel_penalty:
+            lower_backtrack[i][j] = _prev_node_is_left_
+        elif lower_max_vals[i][j] == middle_max_vals[i][j-1] - self.gap_initiation_penalty:
+            lower_backtrack[i][j] = _prev_node_is_middle_level_
+        else:
+            ValueError("Unexpected value, lower_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(lower_max_vals[i][j])))
+
 
 def print_matrices(max_vals_matrices, backtrack_matrices, nucleotide_h, nucleotide_w):
     for m in max_vals_matrices:
@@ -409,63 +477,10 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
             #print("i:{0} j:{1}".format(str(i), str(j)))
             match = alignment_strategy.scoring[nucleotide_w[j-1]][nucleotide_h[i-1]]
 
-            if alignment_strategy.three_level_dag:
-                max_results = alignment_strategy.get_max_val_for_loc([lower_max_vals[i][j - 1], lower_max_vals[i][j]], \
-                                                                 [middle_max_vals[i][j-1], \
-                                                                  middle_max_vals[i-1][j], \
-                                                                  middle_max_vals[i-1][j-1]], \
-                                                                 [upper_max_vals[i-1][j], upper_max_vals[i][j]], \
-                                                                 i, j, match )
-            else:
-                max_results = alignment_strategy.get_max_val_for_loc([], \
-                                                                 [middle_max_vals[i][j-1], \
-                                                                  middle_max_vals[i-1][j], \
-                                                                  middle_max_vals[i-1][j-1]], \
-                                                                 [], \
+            max_results = alignment_strategy.get_max_val_for_loc(max_vals_matrices,
                                                                  i, j, match )
 
-            middle_max_vals[i][j] = max_results[1]
-
-            if alignment_strategy.three_level_dag:
-                lower_max_vals[i][j] = max_results[0]
-                upper_max_vals[i][j] = max_results[2]
-
-            if alignment_strategy.three_level_dag:
-                if middle_max_vals[i][j] == middle_max_vals[i-1][j-1] + match:
-                    middle_backtrack[i][j] = _prev_node_is_diagonal_
-                elif middle_max_vals[i][j] == upper_max_vals[i][j]:
-                    middle_backtrack[i][j] = _prev_node_is_upper_level_up_
-                elif middle_max_vals[i][j] == lower_max_vals[i][j]:
-                    middle_backtrack[i][j] = _prev_node_is_lower_level_left_
-                elif middle_max_vals[i][j] == 0:
-                    middle_backtrack[i][j] = _prev_node_is_zero_
-                else:
-                    ValueError("Unexpected value, middle_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(middle_max_vals[i][j])))
-
-                if upper_max_vals[i][j] == upper_max_vals[i-1][j] - alignment_strategy.indel_penalty:
-                    upper_backtrack[i][j] = _prev_node_is_up_
-                elif upper_max_vals[i][j] == middle_max_vals[i-1][j] - alignment_strategy.gap_initiation_penalty:
-                    upper_backtrack[i][j] = _prev_node_is_middle_level_
-                else:
-                    ValueError("Unexpected value, uppper_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(upper_max_vals[i][j])))
-
-                if lower_max_vals[i][j] == lower_max_vals[i][j-1] - alignment_strategy.indel_penalty:
-                    lower_backtrack[i][j] = _prev_node_is_left_
-                elif lower_max_vals[i][j] == middle_max_vals[i][j-1] - alignment_strategy.gap_initiation_penalty:
-                    lower_backtrack[i][j] = _prev_node_is_middle_level_
-                else:
-                    ValueError("Unexpected value, lower_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(lower_max_vals[i][j])))
-            else:
-                if middle_max_vals[i][j] == middle_max_vals[i-1][j] - alignment_strategy.indel_penalty:
-                    middle_backtrack[i][j] = _prev_node_is_up_
-                elif middle_max_vals[i][j] == middle_max_vals[i][j-1] - alignment_strategy.indel_penalty:
-                    middle_backtrack[i][j] = _prev_node_is_left_
-                elif middle_max_vals[i][j] == middle_max_vals[i-1][j-1] + match:
-                    middle_backtrack[i][j] = _prev_node_is_diagonal_
-                elif middle_max_vals[i][j] == 0:
-                    middle_backtrack[i][j] = _prev_node_is_zero_
-                else:
-                    ValueError("Unexpected value, middle_max_vals[{0}][{1}] == {2}".format(str(i), str(j), str(middle_max_vals[i][j])))
+            alignment_strategy.assign_matrix_vals(max_vals_matrices, backtrack_matrices, max_results, i, j, match)
 
             if i > 0 and j > 0:
                 new_max_val = alignment_strategy.found_new_max_value(middle_max_vals[i][j], max_overall, (i, j), len(nucleotide_w), len(nucleotide_h))
@@ -504,22 +519,11 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
         if max_overall_loc[1] < len(nucleotide_w) and max_overall_loc[0] == len(nucleotide_h):
             f_score = lower_max_vals[len(nucleotide_h)][len(nucleotide_w)]
 
-    max_vals_matrices = []
-    backtrack_matrices = []
     max_location = []
     max_location.append(max_overall_loc[0])
     max_location.append(max_overall_loc[1])
     if alignment_strategy.three_level_dag:
         max_location.append(max_overall_level)
-        max_vals_matrices.append(lower_max_vals)
-        max_vals_matrices.append(middle_max_vals)
-        max_vals_matrices.append(upper_max_vals)
-        backtrack_matrices.append(lower_backtrack)
-        backtrack_matrices.append(middle_backtrack)
-        backtrack_matrices.append(upper_backtrack)
-    else:
-        backtrack_matrices.append(middle_backtrack)
-        max_vals_matrices.append(middle_max_vals)
 
     out_h, out_w = alignment_strategy.outputlcs(backtrack_matrices, max_location, nucleotide_h, nucleotide_w)
 
