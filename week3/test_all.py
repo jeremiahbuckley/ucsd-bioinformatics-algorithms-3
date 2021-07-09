@@ -94,9 +94,40 @@ def affine_gap_tests():
                         ["test/10_AffineGapPenalties/inputs/test7.txt","test/10_AffineGapPenalties/outputs/test7.txt"], \
                         ["test/10_AffineGapPenalties/inputs/test8.txt","test/10_AffineGapPenalties/outputs/test8.txt"], \
                         ["test/10_AffineGapPenalties/inputs/sample.txt","test/10_AffineGapPenalties/outputs/sample.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/sample_2.txt","test/10_AffineGapPenalties/outputs/sample_2.txt"], \
+                        ["test/10_AffineGapPenalties/inputs/sample_3.txt","test/10_AffineGapPenalties/outputs/sample_3.txt"], \
                         ]:
         single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(1, 11, True, scoring_filename = "./BLOSUM62.txt"))
         # single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(-4, 0, True, scoring_filename = "./BLOSUM62.txt"))
+
+def affine_gap_stop_and_think():
+    for in_f, out_f in [ \
+                        ["test/affine_gap_stop_and_think_sample.txt", "test/affine_gap_stop_and_think_4_4_expected_result.txt"], \
+                        ]:
+        single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(4, 4, True, scoring_filename = "./BLOSUM62.txt"))
+    for in_f, out_f in [ \
+                        ["test/affine_gap_stop_and_think_sample.txt", "test/affine_gap_stop_and_think_1_11_expected_result.txt"], \
+                        ]:
+        single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(1, 11, True, scoring_filename = "./BLOSUM62.txt"))
+    for in_f, out_f in [ \
+                        ["test/affine_gap_stop_and_think_sample.txt", "test/affine_gap_stop_and_think_2_10_expected_result.txt"], \
+                        ]:
+        single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(2, 10, True, scoring_filename = "./BLOSUM62.txt"))
+    for in_f, out_f in [ \
+                        ["test/affine_gap_stop_and_think_sample.txt", "test/affine_gap_stop_and_think_1_15_expected_result.txt"], \
+                        ]:
+        single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(1, 15, True, scoring_filename = "./BLOSUM62.txt"))
+    for in_f, out_f in [ \
+                        ["test/affine_gap_stop_and_think_sample.txt", "test/affine_gap_stop_and_think_2_4_expected_result.txt"], \
+                        ]:
+        single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGap(2, 4, True, scoring_filename = "./BLOSUM62.txt"))
+
+def affine_gap_local_tests():
+    for in_f, out_f in [ \
+                        ["test/affine_gap_local.txt", "test/affine_gap_local_expected_result.txt"], \
+                        ]:
+        single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGapLocal(1, 11, True, scoring_filename = "./BLOSUM62.txt"))
+
 
 
 def run_all_tests():
@@ -110,6 +141,10 @@ def run_all_tests():
     overlap_tests()
 
     affine_gap_tests()
+
+    affine_gap_local_tests()
+
+    # affine_gap_stop_and_think()
 
     return
 
