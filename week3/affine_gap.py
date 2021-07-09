@@ -456,21 +456,16 @@ def print_matrix(list_of_lists, str_v, str_h):
 
 def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
     backtrack_matrices, max_vals_matrices = alignment_strategy.init_matrixes(nucleotide_h, nucleotide_w)
-    lower_max_vals=middle_max_vals=upper_max_vals=lower_backtrack=middle_backtrack=upper_backtrack = []
+    lower_max_vals=middle_max_vals=upper_max_vals = []
     if alignment_strategy.three_level_dag:
         lower_max_vals = max_vals_matrices[0]
         middle_max_vals = max_vals_matrices[1]
         upper_max_vals = max_vals_matrices[2]
-        lower_backtrack = backtrack_matrices[0]
-        middle_backtrack = backtrack_matrices[1]
-        upper_backtrack = backtrack_matrices[2]
     else:
         middle_max_vals = max_vals_matrices[0]
-        middle_backtrack = backtrack_matrices[0]
 
     max_overall = -math.inf
-    max_overall_loc = (0, 0)
-    max_overall_level = 1
+    max_overall_loc = []
     all_maxes = []
     for i in range(1, len(nucleotide_h)+1):
         for j in range(1, len(nucleotide_w)+1):
@@ -482,28 +477,30 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
 
             alignment_strategy.assign_matrix_vals(max_vals_matrices, backtrack_matrices, max_results, i, j, match)
 
+
+#            all_maxes, max_overall, max_overall_loc = alignment_strategy.set_max(i, j, max_val_matrices, max_overall, len(nucleotide_h), len(nucleotide_w))
+
             if i > 0 and j > 0:
                 new_max_val = alignment_strategy.found_new_max_value(middle_max_vals[i][j], max_overall, (i, j), len(nucleotide_w), len(nucleotide_h))
                 if new_max_val:
                     if middle_max_vals[i][j] > max_overall:
                         all_maxes = []
 
+                    max_overall_loc = [i, j]
                     #print(max_vals[i][j])
                     if alignment_strategy.three_level_dag:
                         max_overall = max(lower_max_vals[i][j], middle_max_vals[i][j], upper_max_vals[i][j])
                         if max_overall == upper_max_vals[i][j]:
-                            max_overall_level = 2
+                            max_overall_loc.append(2)
                         elif max_overall == middle_max_vals[i][j]:
-                            max_overall_level = 1
+                            max_overall_loc.append(1)
                         elif max_overall == lower_max_vals[i][j]:
-                            max_overall_level = 0
+                            max_overall_loc.append(0)
                         else:
                             ValueError("Unexpected max value {0}. Possible values were: {1}, {2}, {3}".format(str(max_overall), str(lower_max_vals[i][j]), str(middle_max_vals[i][j]), str(upper_max_vals[i][j])))
                     else:
                         max_overall = middle_max_vals[i][j]
-                    max_overall_loc = (i, j)
                     all_maxes.append(max_overall_loc)
-                    # still have to figure out backtrack
 
         #print()
         #print_matrix(max_vals)
@@ -513,19 +510,8 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
     #print()
     #print(all_maxes)
     f_score = middle_max_vals[max_overall_loc[0]][max_overall_loc[1]]
-    if alignment_strategy.three_level_dag:
-        if max_overall_loc[0] < len(nucleotide_h) and max_overall_loc[1] == len(nucleotide_w):
-            f_score = upper_max_vals[len(nucleotide_h)][len(nucleotide_w)]
-        if max_overall_loc[1] < len(nucleotide_w) and max_overall_loc[0] == len(nucleotide_h):
-            f_score = lower_max_vals[len(nucleotide_h)][len(nucleotide_w)]
 
-    max_location = []
-    max_location.append(max_overall_loc[0])
-    max_location.append(max_overall_loc[1])
-    if alignment_strategy.three_level_dag:
-        max_location.append(max_overall_level)
-
-    out_h, out_w = alignment_strategy.outputlcs(backtrack_matrices, max_location, nucleotide_h, nucleotide_w)
+    out_h, out_w = alignment_strategy.outputlcs(backtrack_matrices, max_overall_loc, nucleotide_h, nucleotide_w)
 
 
     print_matrices(max_vals_matrices, backtrack_matrices, nucleotide_h, nucleotide_w)
