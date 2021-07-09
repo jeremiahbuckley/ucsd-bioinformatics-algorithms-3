@@ -26,56 +26,46 @@ class AlignmentStrategy:
         self.three_level_dag = False
         print("indel: {0}".format(str(self.indel_penalty)))
 
+    def create_matrices(self):
+        backtrack = []
+        max_val = []
+        return [[max_val, backtrack]]
+
     def init_matrixes(self, nucleotide_h, nucleotide_w):
-        lower_max_vals = []
-        middle_max_vals = []
-        upper_max_vals = []
-        lower_backtrack = []
-        middle_backtrack = []
-        upper_backtrack = []
+        mv_bt_pairs = self.create_matrices()
+        backtracks = []
+        max_vals_list = []
 
-        for i in range(len(nucleotide_h)+1):
-            lower_vals = []
-            middle_vals = []
-            upper_vals = []
-            lower_bv = []
-            middle_bv = []
-            upper_bv = []
-            for j in range(len(nucleotide_w)+1):
-                lower_vals.append(0)
-                middle_vals.append(0)
-                upper_vals.append(0)
-                lower_bv.append('x')
-                middle_bv.append('x')
-                upper_bv.append('x')
-            lower_max_vals.append(lower_vals)
-            middle_max_vals.append(middle_vals)
-            upper_max_vals.append(upper_vals)
-            lower_backtrack.append(lower_bv)
-            middle_backtrack.append(middle_bv)
-            upper_backtrack.append(upper_bv)
+        level = -1
+        for mv_bt in mv_bt_pairs:
+            max_vals = mv_bt[0]
+            backtrack = mv_bt[1]
+            level += 1
+            for i in range(len(nucleotide_h)+1):
+                vals = []
+                bt_vals = []
 
-        for i in range(len(nucleotide_h)+1):
-            lower_max_vals[i][0] = self.init_vertical_start_row_value(0, i)
-            middle_max_vals[i][0] = self.init_vertical_start_row_value(1, i)
-            upper_max_vals[i][0] = self.init_vertical_start_row_value(2, i)
-            lower_backtrack[i][0] = _prev_node_is_zero_
-            middle_backtrack[i][0] = _prev_node_is_zero_
-            upper_backtrack[i][0] = _prev_node_is_zero_
-        for i in range(len(nucleotide_w)+1):
-            lower_max_vals[0][i] = self.init_horizontal_start_row_value(0, i)
-            middle_max_vals[0][i] = self.init_horizontal_start_row_value(1, i)
-            upper_max_vals[0][i] = self.init_horizontal_start_row_value(2, i)
-            lower_backtrack[0][i] = _prev_node_is_zero_
-            middle_backtrack[0][i] = _prev_node_is_zero_
-            upper_backtrack[0][i] = _prev_node_is_zero_
+                for j in range(len(nucleotide_w)+1):
+                    vals.append(0)
+                    bt_vals.append('x')
+                max_vals.append(vals)
+                backtrack.append(bt_vals)
+
+            for i in range(len(nucleotide_h)+1):
+                max_vals[i][0] = self.init_vertical_start_row_value(level, i)
+                backtrack[i][0] = _prev_node_is_zero_
+            for i in range(len(nucleotide_w)+1):
+                max_vals[0][i] = self.init_horizontal_start_row_value(level, i)
+                backtrack[0][i] = _prev_node_is_zero_
+
+            max_vals_list.append(max_vals)
+            backtracks.append(backtrack)
 
         #print()
         #print_matrix(middle_max_vals)
         #print_matrix(backtrack)
 
-        return lower_backtrack, middle_backtrack, upper_backtrack, \
-               lower_max_vals, middle_max_vals, upper_max_vals
+        return backtracks, max_vals_list
 
     def init_horizontal_start_row_value(self, matrix_level, idx):
         return 0
@@ -139,18 +129,46 @@ class AlignmentStrategy:
 
         return scoring
 
+    def outputlcs(self, backtrack_matrices, max_location, nucleotide_h, nucleotide_w):
 
+        align_h = ""
+        align_w = ""
+        #print(max_location)
+        #print(nucleotide_h)
+        #print(nucleotide_w)
+        backtrack = backtrack_matrices[0]
+        height = max_location[0]
+        width = max_location[1]
+        while height != 0 and width != 0:
+            if backtrack[height][width] == _prev_node_is_zero_:
+                height = 0
+                width = 0
+            elif backtrack[height][width] == _prev_node_is_up_:
+                align_h = nucleotide_h[height-1] + align_h
+                align_w = "-" + align_w
+                height -= 1
+            elif backtrack[height][width] == _prev_node_is_left_:
+                align_h = "-" + align_h
+                align_w = nucleotide_w[width-1] + align_w
+                width -= 1
+            elif backtrack[height][width] == _prev_node_is_diagonal_:
+                align_h = nucleotide_h[height-1] + align_h
+                align_w = nucleotide_w[width-1] + align_w
+                height -= 1
+                width -= 1
+            else:
+                ValueError("Unexpected value. Level {0}, Value: {1}".format(str(1), middle_backtrack[height][width]))
+
+        align_h, align_w = self.pad_alignment_strings(align_h, align_w, height, width, nucleotide_h, nucleotide_w)
+
+        return align_h, align_w
 
 class AlignmentStrategyGlobal(AlignmentStrategy):
     def init_horizontal_start_row_value(self, matrix_level, idx):
-        if matrix_level == 1:
-            return -1 * self.indel_penalty * idx
-        return -math.inf
+        return -1 * self.indel_penalty * idx
 
     def init_vertical_start_row_value(self, matrix_level, idx):
-        if matrix_level == 1:
-            return -1 * self.indel_penalty * idx
-        return -math.inf
+        return -1 * self.indel_penalty * idx
 
     def pad_alignment_strings(self, align_h, align_w, height, width, nucleotide_h, nucleotide_w):
         if height == 0 and width != 0:
@@ -168,9 +186,7 @@ class AlignmentStrategyLocal(AlignmentStrategy):
 
 class AlignmentStrategyFitting(AlignmentStrategy):
     def init_horizontal_start_row_value(self, matrix_level, idx):
-        if matrix_level == 1:
-            return -1 * self.indel_penalty * idx
-        return -math.inf
+        return -1 * self.indel_penalty * idx
 
     def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, v_idx, h_idx, match):
         mv = max(middle_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[1] - self.indel_penalty, middle_matrix_vals[2] + match)
@@ -183,9 +199,7 @@ class AlignmentStrategyFitting(AlignmentStrategy):
 
 class AlignmentStrategyOverlap(AlignmentStrategy):
     def init_horizontal_start_row_value(self, matrix_level, idx):
-        if matrix_level == 1:
-            return -1 * self.indel_penalty * idx
-        return -math.inf
+        return -1 * self.indel_penalty * idx
 
     def found_new_max_value(self, current_value, max_value, loc, horizontal_len, vertical_len):
         return loc[0] == vertical_len and current_value >= max_value
@@ -197,6 +211,14 @@ class AlignmentStrategyAffineGap(AlignmentStrategy):
         self.gap_initiation_penalty = gap_initiation_penalty
         print("gap init: {0}".format(str(self.gap_initiation_penalty)))
 
+    def create_matrices(self):
+        mv_bt_pairs = []
+        for i in range(3):
+            max_vals = []
+            backtrack = []
+            mv_bt_pairs.append([max_vals, backtrack])
+        return mv_bt_pairs
+        
     def get_max_val_for_loc(self, lower_matrix_vals, middle_matrix_vals, upper_matrix_vals, v_idx, h_idx, match):
         max_for_lower = max(lower_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[0] - self.gap_initiation_penalty)
         max_for_upper = max(upper_matrix_vals[0] - self.indel_penalty, middle_matrix_vals[1] - self.gap_initiation_penalty)
@@ -237,13 +259,85 @@ class AlignmentStrategyAffineGap(AlignmentStrategy):
             return True
         return possible
 
+    def outputlcs(self, backtrack_matrices, max_location, nucleotide_h, nucleotide_w):
 
-def print_matrix(list_of_lists, str_h, str_v):
+        align_h = ""
+        align_w = ""
+        #print(max_location)
+        #print(nucleotide_h)
+        #print(nucleotide_w)
+        lower_backtrack = backtrack_matrices[0]
+        middle_backtrack = backtrack_matrices[1]
+        upper_backtrack = backtrack_matrices[2]
+        height = max_location[0]
+        width = max_location[1]
+        level = max_location[2]
+        while height != 0 and width != 0:
+            # pdb.set_trace()
+            if level == 1:
+                if middle_backtrack[height][width] == _prev_node_is_zero_:
+                    height = 0
+                    width = 0
+                elif middle_backtrack[height][width] == _prev_node_is_upper_level_up_:
+                    level = 2
+                elif middle_backtrack[height][width] == _prev_node_is_lower_level_left_:
+                    level = 0
+                elif middle_backtrack[height][width] == _prev_node_is_diagonal_:
+                    align_h = nucleotide_h[height-1] + align_h
+                    align_w = nucleotide_w[width-1] + align_w
+                    height -= 1
+                    width -= 1
+                else:
+                    ValueError("Unexpected value. Level {0}, Value: {1}" \
+                               .format(str(level), middle_backtrack[height][width]))
+            elif level == 0:
+                align_h = "-" + align_h
+                align_w = nucleotide_w[width-1] + align_w
+                if lower_backtrack[height][width] == _prev_node_is_middle_level_:
+                    width -= 1
+                    level = 1
+                elif lower_backtrack[height][width] == _prev_node_is_left_:
+                    width -= 1
+                else:
+                    ValueError("Unexpected value. Level {0}, Value: {1}" \
+                               .format(str(level), middle_backtrack[height][width]))
+            elif level == 2:
+                align_h = nucleotide_h[height-1] + align_h
+                align_w = "-" + align_w
+                if upper_backtrack[height][width] == _prev_node_is_middle_level_:
+                    height -= 1
+                    level = 1
+                elif upper_backtrack[height][width] == _prev_node_is_up_:
+                    height -= 1
+                else:
+                    ValueError("Unexpected value. Level {0}, Value: {1}" \
+                               .format(str(level), middle_backtrack[height][width]))
+            else:
+                ValueError("Unexpected value. Level {0}, Value: {1}" \
+                           .format(str(level), middle_backtrack[height][width]))
+
+        align_h, align_w = self.pad_alignment_strings(align_h, align_w, height, width, \
+                                                      nucleotide_h, nucleotide_w)
+
+        return align_h, align_w
+
+
+def print_matrices(max_vals_matrices, backtrack_matrices, nucleotide_h, nucleotide_w):
+    for m in max_vals_matrices:
+        print()
+        print_matrix(m, nucleotide_h, nucleotide_w)
+    for m in backtrack_matrices:
+        print()
+        print_matrix(m, nucleotide_h, nucleotide_w)
+
+
+def print_matrix(list_of_lists, str_v, str_h):
     height = len(list_of_lists)
     width = len(list_of_lists[0])
 
     if height > 20 or width > 20:
-        print("Matrix will be too large to analyze.\nTruncating to two subgraphs of first 10 and last 10.")
+        print("Matrix will be too large to analyze.")
+        print("Truncating to two subgraphs of first 10 and last 10.")
 
         print("first 10")
         out_str = "           {0}".format("  ".join([ch.rjust(5) for ch in str_h]))
@@ -292,94 +386,19 @@ def print_matrix(list_of_lists, str_h, str_v):
                 print("{0}   {1}".format(str_v[i-1], out_str))
 
 
-
-
-
-def outputlcs(backtrack_matrices, max_location, nucleotide_h, nucleotide_w, alignment_strategy):
-
-
-    align_h = ""
-    align_w = ""
-    #print(max_overall_loc)
-    #print(nucleotide_h)
-    #print(nucleotide_w)
+def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
+    backtrack_matrices, max_vals_matrices = alignment_strategy.init_matrixes(nucleotide_h, nucleotide_w)
+    lower_max_vals=middle_max_vals=upper_max_vals=lower_backtrack=middle_backtrack=upper_backtrack = []
     if alignment_strategy.three_level_dag:
+        lower_max_vals = max_vals_matrices[0]
+        middle_max_vals = max_vals_matrices[1]
+        upper_max_vals = max_vals_matrices[2]
         lower_backtrack = backtrack_matrices[0]
         middle_backtrack = backtrack_matrices[1]
         upper_backtrack = backtrack_matrices[2]
-        height = max_location[0]
-        width = max_location[1]
-        level = max_location[2]
-        while height != 0 and width != 0:
-            # pdb.set_trace()
-            if level == 1:
-                if middle_backtrack[height][width] == _prev_node_is_zero_:
-                    height = 0
-                    width = 0
-                elif middle_backtrack[height][width] == _prev_node_is_upper_level_up_:
-                    level = 2
-                elif middle_backtrack[height][width] == _prev_node_is_lower_level_left_:
-                    level = 0
-                elif middle_backtrack[height][width] == _prev_node_is_diagonal_:
-                    align_h = nucleotide_h[height-1] + align_h
-                    align_w = nucleotide_w[width-1] + align_w
-                    height -= 1
-                    width -= 1
-                else:
-                    ValueError("Unexpected value. Level {0}, Value: {1}".format(str(level), middle_backtrack[height][width]))
-            elif level == 0:
-                align_h = "-" + align_h
-                align_w = nucleotide_w[width-1] + align_w
-                if lower_backtrack[height][width] == _prev_node_is_middle_level_:
-                    width -= 1
-                    level = 1
-                elif lower_backtrack[height][width] == _prev_node_is_left_:
-                    width -= 1
-                else:
-                    ValueError("Unexpected value. Level {0}, Value: {1}".format(str(level), middle_backtrack[height][width]))
-            elif level == 2:
-                align_h = nucleotide_h[height-1] + align_h
-                align_w = "-" + align_w
-                if upper_backtrack[height][width] == _prev_node_is_middle_level_:
-                    height -= 1
-                    level = 1
-                elif upper_backtrack[height][width] == _prev_node_is_up_:
-                    height -= 1
-                else:
-                    ValueError("Unexpected value. Level {0}, Value: {1}".format(str(level), middle_backtrack[height][width]))
-            else:
-                ValueError("Unexpected value. Level {0}, Value: {1}".format(str(level), middle_backtrack[height][width]))
     else:
+        middle_max_vals = max_vals_matrices[0]
         middle_backtrack = backtrack_matrices[0]
-        height = max_location[0]
-        width = max_location[1]
-        while height != 0 and width != 0:
-            if middle_backtrack[height][width] == _prev_node_is_zero_:
-                height = 0
-                width = 0
-            elif middle_backtrack[height][width] == _prev_node_is_up_:
-                align_h = nucleotide_h[height-1] + align_h
-                align_w = "-" + align_w
-                height -= 1
-            elif middle_backtrack[height][width] == _prev_node_is_left_:
-                align_h = "-" + align_h
-                align_w = nucleotide_w[width-1] + align_w
-                width -= 1
-            elif middle_backtrack[height][width] == _prev_node_is_diagonal_:
-                align_h = nucleotide_h[height-1] + align_h
-                align_w = nucleotide_w[width-1] + align_w
-                height -= 1
-                width -= 1
-            else:
-                ValueError("Unexpected value. Level {0}, Value: {1}".format(str(1), middle_backtrack[height][width]))
-
-    align_h, align_w = alignment_strategy.pad_alignment_strings(align_h, align_w, height, width, nucleotide_h, nucleotide_w)
-
-    #print()
-    return align_h, align_w
-
-def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
-    lower_backtrack, middle_backtrack, upper_backtrack, lower_max_vals, middle_max_vals, upper_max_vals = alignment_strategy.init_matrixes(nucleotide_h, nucleotide_w)
 
     max_overall = -math.inf
     max_overall_loc = (0, 0)
@@ -390,12 +409,21 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
             #print("i:{0} j:{1}".format(str(i), str(j)))
             match = alignment_strategy.scoring[nucleotide_w[j-1]][nucleotide_h[i-1]]
 
-            max_results = alignment_strategy.get_max_val_for_loc([lower_max_vals[i][j - 1], lower_max_vals[i][j]], \
+            if alignment_strategy.three_level_dag:
+                max_results = alignment_strategy.get_max_val_for_loc([lower_max_vals[i][j - 1], lower_max_vals[i][j]], \
                                                                  [middle_max_vals[i][j-1], \
                                                                   middle_max_vals[i-1][j], \
                                                                   middle_max_vals[i-1][j-1]], \
                                                                  [upper_max_vals[i-1][j], upper_max_vals[i][j]], \
                                                                  i, j, match )
+            else:
+                max_results = alignment_strategy.get_max_val_for_loc([], \
+                                                                 [middle_max_vals[i][j-1], \
+                                                                  middle_max_vals[i-1][j], \
+                                                                  middle_max_vals[i-1][j-1]], \
+                                                                 [], \
+                                                                 i, j, match )
+
             middle_max_vals[i][j] = max_results[1]
 
             if alignment_strategy.three_level_dag:
@@ -476,36 +504,28 @@ def lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy):
         if max_overall_loc[1] < len(nucleotide_w) and max_overall_loc[0] == len(nucleotide_h):
             f_score = lower_max_vals[len(nucleotide_h)][len(nucleotide_w)]
 
+    max_vals_matrices = []
     backtrack_matrices = []
     max_location = []
     max_location.append(max_overall_loc[0])
     max_location.append(max_overall_loc[1])
     if alignment_strategy.three_level_dag:
         max_location.append(max_overall_level)
+        max_vals_matrices.append(lower_max_vals)
+        max_vals_matrices.append(middle_max_vals)
+        max_vals_matrices.append(upper_max_vals)
         backtrack_matrices.append(lower_backtrack)
         backtrack_matrices.append(middle_backtrack)
         backtrack_matrices.append(upper_backtrack)
     else:
         backtrack_matrices.append(middle_backtrack)
+        max_vals_matrices.append(middle_max_vals)
 
-    out_h, out_w = outputlcs(backtrack_matrices, max_location, nucleotide_h, nucleotide_w, alignment_strategy)
+    out_h, out_w = alignment_strategy.outputlcs(backtrack_matrices, max_location, nucleotide_h, nucleotide_w)
 
-    if alignment_strategy.three_level_dag:
-        print()
-        print_matrix(lower_max_vals, nucleotide_w, nucleotide_h)
-    print()
-    print_matrix(middle_max_vals, nucleotide_w, nucleotide_h)
-    if alignment_strategy.three_level_dag:
-        print()
-        print_matrix(upper_max_vals, nucleotide_w, nucleotide_h)
-    if alignment_strategy.three_level_dag:
-        print()
-        print_matrix(lower_backtrack, nucleotide_w, nucleotide_h)
-    print()
-    print_matrix(middle_backtrack, nucleotide_w, nucleotide_h)
-    if alignment_strategy.three_level_dag:
-        print()
-        print_matrix(upper_backtrack, nucleotide_w, nucleotide_h)
+
+    print_matrices(max_vals_matrices, backtrack_matrices, nucleotide_h, nucleotide_w)
+
     print(f_score)
     print(out_h)
     print(out_w)
