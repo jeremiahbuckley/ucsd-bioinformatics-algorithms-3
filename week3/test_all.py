@@ -5,6 +5,7 @@ import time
 #from week2.any_alignment import AlignmentStrategyGlobal
 
 import affine_gap as any_alignment
+import space_efficient_global_match
 
 def test_verify(results, verifyfile):
 
@@ -26,6 +27,19 @@ def test_verify(results, verifyfile):
     assert results[1] == val_1
     assert results[2] == val_2
 
+def test_verify_space_efficient(results, verifyfile):
+    with open(verifyfile) as f:
+        edge = f.readline()
+
+    print("calcualted result:")
+    print(results)
+
+    print("expected result:")
+    print(edge)
+
+    assert results == edge
+
+
 def single_test(input_file, expected_results_file, alignment_strategy):
     print(input_file)
     print(expected_results_file)
@@ -37,6 +51,18 @@ def single_test(input_file, expected_results_file, alignment_strategy):
 
     results = any_alignment.lcsbacktrack(nucleotide_h, nucleotide_w, alignment_strategy)
     test_verify(results, expected_results_file)
+
+def single_test_space_efficient(input_file, expected_results_file, alignment_strategy):
+    print(input_file)
+    print(expected_results_file)
+
+
+    with open(input_file) as f:
+        nucleotide_h = f.readline().rstrip()
+        nucleotide_w = f.readline().rstrip()
+
+    results = space_efficient_global_match.find_middle_edge(nucleotide_h, nucleotide_w, alignment_strategy)
+    test_verify_space_efficient(results, expected_results_file)
 
 def global_tests():
     for in_f, out_f in [ \
@@ -124,27 +150,41 @@ def affine_gap_stop_and_think():
 
 def affine_gap_local_tests():
     for in_f, out_f in [ \
-                        ["test/affine_gap_local.txt", "test/affine_gap_local_expected_result.txt"], \
+                        ["test/affine_gap_local.txt","test/affine_gap_local_expected_result.txt"], \
                         ]:
         single_test(in_f, out_f, any_alignment.AlignmentStrategyAffineGapLocal(1, 11, True, scoring_filename = "./BLOSUM62.txt"))
+
+def space_efficient_global_match_tests():
+    for in_f, out_f in [ \
+#                        ["test/11_MiddleEdge/inputs/sample.txt","test/11_MiddleEdge/outputs/sample.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_2.txt","test/11_MiddleEdge/outputs/sample_2.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_3.txt","test/11_MiddleEdge/outputs/sample_3.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_4.txt","test/11_MiddleEdge/outputs/sample_4.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_5.txt","test/11_MiddleEdge/outputs/sample_5.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_6.txt","test/11_MiddleEdge/outputs/sample_6.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_7.txt","test/11_MiddleEdge/outputs/sample_7.txt"], \
+                        ]:
+        single_test_space_efficient(in_f, out_f, space_efficient_global_match.AlignmentStrategyGlobal(5, True, scoring_filename = "./BLOSUM62.txt"))
 
 
 
 def run_all_tests():
 
-    global_tests()
+    # global_tests()
     
-    local_tests()
+    # local_tests()
 
-    fitting_tests()
+    # fitting_tests()
 
-    overlap_tests()
+    # overlap_tests()
 
-    affine_gap_tests()
+    # affine_gap_tests()
 
-    affine_gap_local_tests()
+    # affine_gap_local_tests()
 
     # affine_gap_stop_and_think()
+
+    space_efficient_global_match_tests()
 
     return
 
