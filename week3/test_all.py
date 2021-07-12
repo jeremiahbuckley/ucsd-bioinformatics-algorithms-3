@@ -6,6 +6,7 @@ import time
 
 import affine_gap as any_alignment
 import space_efficient_global_match
+import linear_space_alignment
 
 def test_verify(results, verifyfile):
 
@@ -39,7 +40,6 @@ def test_verify_space_efficient(results, verifyfile):
 
     assert results == edge
 
-
 def single_test(input_file, expected_results_file, alignment_strategy):
     print(input_file)
     print(expected_results_file)
@@ -63,6 +63,18 @@ def single_test_space_efficient(input_file, expected_results_file, alignment_str
 
     results = space_efficient_global_match.find_middle_edge(nucleotide_h, nucleotide_w, alignment_strategy)
     test_verify_space_efficient(results, expected_results_file)
+
+def single_test_linear_space_alignment(input_file, expected_results_file, alignment_strategy):
+    print(input_file)
+    print(expected_results_file)
+
+
+    with open(input_file) as f:
+        nucleotide_h = f.readline().rstrip()
+        nucleotide_w = f.readline().rstrip()
+
+    results = linear_space_alignment.find_alignment(nucleotide_h, nucleotide_w, alignment_strategy)
+    test_verify(results, expected_results_file) # can use the same as most of the other tests
 
 def global_tests():
     for in_f, out_f in [ \
@@ -161,10 +173,22 @@ def space_efficient_global_match_tests():
                         ["test/11_MiddleEdge/inputs/sample_3.txt","test/11_MiddleEdge/outputs/sample_3.txt"], \
                         ["test/11_MiddleEdge/inputs/sample_4.txt","test/11_MiddleEdge/outputs/sample_4.txt"], \
                         ["test/11_MiddleEdge/inputs/sample_5.txt","test/11_MiddleEdge/outputs/sample_5.txt"], \
-                        ["test/11_MiddleEdge/inputs/sample_6.txt","test/11_MiddleEdge/outputs/sample_6.txt"], \
-                        ["test/11_MiddleEdge/inputs/sample_7.txt","test/11_MiddleEdge/outputs/sample_7.txt"], \
+#                        ["test/11_MiddleEdge/inputs/sample_6.txt","test/11_MiddleEdge/outputs/sample_6.txt"], \
+#                        ["test/11_MiddleEdge/inputs/sample_7.txt","test/11_MiddleEdge/outputs/sample_7.txt"], \
                         ]:
         single_test_space_efficient(in_f, out_f, space_efficient_global_match.AlignmentStrategyGlobal(5, True, scoring_filename = "./BLOSUM62.txt"))
+
+def linear_space_alignment_tests():
+    for in_f, out_f in [ \
+#                        ["test/11_MiddleEdge/inputs/sample.txt","test/11_MiddleEdge/outputs/sample.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_2.txt","test/11_MiddleEdge/outputs/sample_2.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_3.txt","test/11_MiddleEdge/outputs/sample_3.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_4.txt","test/11_MiddleEdge/outputs/sample_4.txt"], \
+                        ["test/11_MiddleEdge/inputs/sample_5.txt","test/11_MiddleEdge/outputs/sample_5.txt"], \
+#                        ["test/11_MiddleEdge/inputs/sample_6.txt","test/11_MiddleEdge/outputs/sample_6.txt"], \
+#                        ["test/11_MiddleEdge/inputs/sample_7.txt","test/11_MiddleEdge/outputs/sample_7.txt"], \
+                        ]:
+        single_test_linear_space_alignment(in_f, out_f, linear_space_alignment.AlignmentStrategyGlobal(5, True, scoring_filename = "./BLOSUM62.txt"))
 
 
 
@@ -185,6 +209,8 @@ def run_all_tests():
     # affine_gap_stop_and_think()
 
     space_efficient_global_match_tests()
+
+    linear_space_alignment_tests()
 
     return
 
