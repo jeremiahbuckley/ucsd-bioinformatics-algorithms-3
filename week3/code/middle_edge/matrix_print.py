@@ -17,8 +17,7 @@ def print_matrix(list_of_lists, str_v, str_h, truncate_height = 20):
     truncate_width = truncate_height
 
     if height > truncate_height or width > truncate_width:
-        print("Matrix will be too large to analyze.")
-        print("Truncating to two subgraphs of first " + str(truncate_height) + " and last " + str(truncate_height) + ".")
+        print("Matrix too large for useful print. Truncating to two subgraphs of first " + str(truncate_height) + " and last " + str(truncate_height) + ".")
         print(str_h)
         print(str_v)
 

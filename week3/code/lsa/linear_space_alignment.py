@@ -168,24 +168,31 @@ class AlignmentStrategyGlobal:
         align_h = ""
         align_w = ""
         path = [[end_loc[0], end_loc[1]]]
-        #print(max_location)
-        #print(nucleotide_h)
-        #print(nucleotide_w)
+        print(nucleotide_h)
+        print(nucleotide_w)
         backtrack = backtrack_matrices[0]
         height = end_loc[0]
         width = end_loc[1]
-        while height != start_loc[0] or width != end_loc[1]:
+        lastmove = ""
+        while height != start_loc[0] and width != start_loc[1]:
             if backtrack[height][width] == _prev_node_is_up_:
+                lastmove = _prev_node_is_up_
+                if height == 0:
+                    ValueError("Unexpected path at: " + str(height) + " " + str(width))
                 path.insert(0, [height-1, width])
                 align_h = nucleotide_h[height-1] + align_h
                 align_w = "-" + align_w
                 height -= 1
             elif backtrack[height][width] == _prev_node_is_left_:
+                lastmove = _prev_node_is_left_
+                if width == 0:
+                    ValueError("Unexpected path at: " + str(height) + " " + str(width))
                 path.insert(0, [height, width-1])
                 align_h = "-" + align_h
                 align_w = nucleotide_w[width-1] + align_w
                 width -= 1
             elif backtrack[height][width] == _prev_node_is_diagonal_:
+                lastmove = _prev_node_is_diagonal_
                 path.insert(0, [height-1, width-1])
                 align_h = nucleotide_h[height-1] + align_h
                 align_w = nucleotide_w[width-1] + align_w
@@ -194,6 +201,18 @@ class AlignmentStrategyGlobal:
             else:
                 ValueError("Unexpected value. Level {0}, Value: {1}". \
                            format(str(1), backtrack[height][width]))
+        if lastmove == _prev_node_is_up_:
+            align_h = nucleotide_h[0] + align_h
+            align_w = "-" + align_w
+        elif lastmove == _prev_node_is_left_:
+            align_h = "-" + align_h
+            align_w = nucleotide_w[0] + align_w
+        elif lastmove == _prev_node_is_diagonal_:
+            align_h = nucleotide_h[0] + align_h
+            align_w = nucleotide_w[0] + align_w
+        else:
+            ValueError("Unexpected value. Level {0}, Value: {1}". \
+                       format("lastmove", lastmove))
         print("outputlcs path")
         print(path)
 
@@ -278,13 +297,14 @@ def find_middle(nucleotide_h, nucleotide_w, start_loc, end_loc, alignment_strate
 
     bisected_corner = [end_loc[0], bisected_corner_w]
 
-    # if (start_loc[1] +1) >= bisected_corner[1]:
-    #     return [start_loc, bisected_corner]
-    # else:
-    end_edge_start, end_edge_end = find_end_edge(nucleotide_h, nucleotide_w, alignment_strategy, start_loc, bisected_corner)
-    print(end_edge_start)
-    print(end_edge_end)
-    return [end_edge_start, end_edge_end]
+    if (start_loc[1] +1) >= bisected_corner[1]:
+        return [start_loc, bisected_corner]
+    else:
+        end_edge_start, end_edge_end = find_end_edge(nucleotide_h, nucleotide_w, alignment_strategy, start_loc, bisected_corner)
+        print(end_edge_start)
+        print(end_edge_end)
+        return [end_edge_start, end_edge_end]
+
 
 def find_alignment_segment(nucleotide_h, nucleotide_w, segment, alignment_strategy):
     start_loc = segment[0]
@@ -320,10 +340,104 @@ def find_alignment_segment(nucleotide_h, nucleotide_w, segment, alignment_strate
 
 
 
+
 def find_alignment(nucleotide_h, nucleotide_w, alignment_strategy):
     start_loc = [1, 1]
     end_loc = [len(nucleotide_h), len(nucleotide_w)]
     return find_alignment_segment(nucleotide_h, nucleotide_w, [start_loc, end_loc], alignment_strategy)
+
+
+
+
+
+_next_node_is_right_ = "H"
+_next_node_is_down_ = "V"
+_next_node_is_diagonal_ = "D"
+_next_node_is_unknown_ = "X"
+_match_score_idx_ = 0
+_mismatch_score_idx_ = 1
+_indel_score_idx_ = 2
+
+
+def list_middle_edge(nucleotide_vertical, nucleotide_horizontal, corners, middle_column, scoring):
+    if (middle_column == corners[1][1]):
+        ValueError("In this function the middle_column must not be on the right edge")
+
+    middle_edge_scores_and_directions = []
+    for i in range(corners[1][0] - corners[0][0] + 1):
+        node_score = -1
+        node_direction = _next_node_is_unknown_
+        j = i + corners[0][0]
+        if j == corners[1][0]:
+            node_score = scoring[_indel_score_idx_]
+            node_direction = _next_node_is_right_
+        elif nucleotide_vertical[j][0] == nucleotide_horizontal[middle_column+1]:
+            node_score = scoring[_match_score_idx_]
+            node_direction = _next_node_is_diagonal_
+        else:
+            node_score = scoring[_mismatch_score_idx_]
+            node_direction = _next_node_is_diagonal_
+        middle_edge_scores_and_directions.append([node_score, node_direction])
+    
+    return middle_edge_scores_and_directions
+
+# TODO problem here, why go horizontal or vertical if the indel penalty is the same, how to pick ?
+
+
+def find_highest_scoring_paths(paths_through_all_mid_nodes):
+    high_score = -1
+    high_score_paths = []
+    for path_candidate in paths_through_all_mid_nodes:
+        path_score = path_candidate[0]
+        paths = path_candidate[1]
+
+        if path_score >= high_score:
+            if path_score > high_score:
+                high_score = path_score
+                high_score_paths = []                
+            for path in paths:
+                high_score_paths.append(path)
+    
+    return high_score, high_score_paths
+
+def linear_space_alignment(nucleotide_vertical, nucleotide_horizontal, corners, scoring):
+    path = ""
+    if (corners[0][1] == corners[1][1]):
+        return scoring[_indel_score_idx_], [_next_node_is_down_]
+    elif (corners[0][0] == corners[1][0]):
+        return scoring[_indel_score_idx_], [_next_node_is_right_]
+    else:
+        middle_column = math.floor((corners[0][1] + corners[1][1]) / 2)
+        middle_edge_results = list_middle_edge(nucleotide_vertical, nucleotide_horizontal, corners, middle_column, scoring)
+
+        paths_through_all_mid_nodes = []
+        for i in range(corners[1][0] - corners[0][0] + 1):
+            j = i+1
+            mid_node = [j, middle_column]
+            middle_edge_score = middle_edge_results[j][0]
+            middle_edge_path = middle_edge_results[j][1]
+            paths_from_the_source_results = linear_space_alignment(nucleotide_vertical, nucleotide_horizontal, [corners[0], mid_node], scoring)
+            paths_from_the_source_score = paths_from_the_source_results[0]
+
+            paths_from_the_source = paths_from_the_source_results[1]
+            for source_path in paths_from_the_source:
+                source_path += middle_edge_path
+
+                paths_to_the_sink_result = linear_space_alignment(nucleotide_vertical, nucleotide_horizontal, [mid_node, corners[1]], scoring)
+                ret_val_score = 0
+                ret_val_paths = []
+
+                paths_to_the_sink_score = paths_to_the_sink_result[0]
+                ret_val_score = (paths_from_the_source_score + middle_edge_score + paths_to_the_sink_score)
+
+                paths_to_the_sink = paths_to_the_sink_result[1]
+                for sink_path in paths_to_the_sink:
+                    ret_val_paths.append(source_path + sink_path)
+
+                paths_through_all_mid_nodes.append([ret_val_score, ret_val_paths])
+
+        highest_scoring_paths = find_highest_scoring_paths(paths_through_all_mid_nodes)
+        return highest_scoring_paths
 
 
 
