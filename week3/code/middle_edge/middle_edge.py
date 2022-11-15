@@ -66,9 +66,13 @@ class Scoring:
         return scoring
 
 
-def find_middle_edge_vals_from_source(nucleotide_vertical, nucleotide_horizontal, middle_column, top, bottom, scoring):
+def find_middle_edge_vals_from_source(nucleotide_vertical, nucleotide_horizontal, middle_column, top_left, bottom_right, scoring):
+    top = top_left[0]
+    left = top_left[1]
+    bottom = bottom_right[0]
+    height = bottom - top
     v1_vals = []
-    for i in range(len(nucleotide_vertical)+1):
+    for i in range(height+1):
         v1_vals.append(i * scoring.indel_penalty)    
 
     if _debug_:
@@ -87,12 +91,12 @@ def find_middle_edge_vals_from_source(nucleotide_vertical, nucleotide_horizontal
     for horizontal_idx in range(middle_column):
         v2_vals = []
         v2_edge_direction = []
-        for i in range(bottom - top + 1):
+        for i in range(height + 1):
             if i == 0:
                 v2_vals.append(v1_vals[i] + scoring.indel_penalty)
                 v2_edge_direction.append([_next_edge_right_])
             else:
-                diag = scoring.get_match_val(nucleotide_vertical[top + i-1], nucleotide_horizontal[horizontal_idx])
+                diag = scoring.get_match_val(nucleotide_vertical[top + i-1], nucleotide_horizontal[left + horizontal_idx])
 
                 val_down = v2_vals[i-1] + scoring.indel_penalty
                 val_diag = v1_vals[i-1] + diag
@@ -142,10 +146,11 @@ def find_middle_edge_data(nucleotide_vertical, nucleotide_horizontal, top_left, 
 
     if _verbose_:
         print("forward")
-    middle_edge_vals_from_source = find_middle_edge_vals_from_source(nucleotide_vertical, nucleotide_horizontal, middle_column, top_left[0], bottom_right[0], scoring)[0]
+
+    middle_edge_vals_from_source = find_middle_edge_vals_from_source(nucleotide_vertical, nucleotide_horizontal, middle_column, top_left, bottom_right, scoring)[0]
     if _verbose_:
         print("reverse")
-    middle_edge_vals_backwards_from_sink_ret_vals = find_middle_edge_vals_from_source(nucleotide_vertical[::-1], nucleotide_horizontal[::-1], len(nucleotide_horizontal) - middle_column, top_left[0], bottom_right[0], scoring)
+    middle_edge_vals_backwards_from_sink_ret_vals = find_middle_edge_vals_from_source(nucleotide_vertical[::-1], nucleotide_horizontal[::-1], len(nucleotide_horizontal) - middle_column, [len(nucleotide_vertical) - bottom_right[0], len(nucleotide_horizontal) - bottom_right[1]], [len(nucleotide_vertical) - 0, len(nucleotide_horizontal) - middle_column], scoring)
     middle_edge_vals_backwards_from_sink = middle_edge_vals_backwards_from_sink_ret_vals[0][::-1]
     middle_edge_direction_towards_sink = middle_edge_vals_backwards_from_sink_ret_vals[1][::-1]
 
@@ -175,17 +180,17 @@ def find_middle_edge(nucleotide_vertical, nucleotide_horizontal, scoring):
 
     full_path_vals = []
     max_path = -math.inf
-    max_idx = []
-    max_idx_edge_directions = []
+    max_node_idx = []
+    max_node_idx_edge_directions = []
     for i in range(len(middle_edge_vals_from_source)):
         path_val = middle_edge_vals_from_source[i] + middle_edge_vals_backwards_from_sink[i]
         if path_val > max_path:
             max_path = path_val
-            max_idx = []
-            max_idx_edge_directions = []
+            max_node_idx = []
+            max_node_idx_edge_directions = []
         if path_val == max_path:
-            max_idx.append(i)
-            max_idx_edge_directions = middle_edge_direction_towards_sink[i]
+            max_node_idx.append([i, middle_column])
+            max_node_idx_edge_directions = middle_edge_direction_towards_sink[i]
         
         # print(path_val)
 
@@ -204,23 +209,23 @@ def find_middle_edge(nucleotide_vertical, nucleotide_horizontal, scoring):
 
     testing_str = ""
     got_testing_str = False
-    for i in max_idx:
-        for j in max_idx_edge_directions:
-            print("{0} {1}".format(i, middle_column))
+    for node in max_node_idx:
+        for j in max_node_idx_edge_directions:
+            print("{0} {1}".format(node[0], node[1]))
             if not got_testing_str:
-                testing_str = "({0}, {1})".format(i, middle_column)
+                testing_str = "({0}, {1})".format(node[0], node[1])
             if j == "H":
-                print("{0} {1}".format(i, middle_column + 1))
+                print("{0} {1}".format(node[0], node[1] + 1))
                 if not got_testing_str:
-                    testing_str += " ({0}, {1})".format(i, middle_column + 1)
+                    testing_str += " ({0}, {1})".format(node[0], node[1] + 1)
             elif j == "V":
-                print("{0} {1}".format(i + 1, middle_column))
+                print("{0} {1}".format(node[0] + 1, node[1]))
                 if not got_testing_str:
-                    testing_str += " ({0}, {1})".format(i + 1, middle_column)
+                    testing_str += " ({0}, {1})".format(node[0] + 1, node[1])
             elif j == "D":
-                print("{0} {1}".format(i + 1, middle_column + 1))
+                print("{0} {1}".format(node[0] + 1, node[1] + 1))
                 if not got_testing_str:
-                    testing_str += " ({0}, {1})".format(i + 1, middle_column + 1)
+                    testing_str += " ({0}, {1})".format(node[0] + 1, node[1] + 1)
             else:
                 ValueError("unexpected value: {0}".format(j))
             print()
