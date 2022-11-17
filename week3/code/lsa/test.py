@@ -112,7 +112,7 @@ def test_sample_0_swap(sample_gat_gaga):
     for i in range(len(middle_edge_vals_backwards_from_sink)):
         assert middle_edge_vals_backwards_from_sink[i] == assert_vals[i]
 
-    assert_vals = [['D'],['D'],['D','H'],['H']]
+    assert_vals = [['D'],['D'],['H','D'],['H']]
     assert len(middle_edge_direction_towards_sink) == len(assert_vals)
     for i in range(len(middle_edge_direction_towards_sink)):
         assert len(middle_edge_direction_towards_sink[i]) == len(assert_vals[i])
