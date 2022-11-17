@@ -57,14 +57,17 @@ def find_middle_edge_vals_from_source(nucleotide_vertical, nucleotide_horizontal
                 elif val_right > val_down and val_right > val_diag:
                     v2_edge_direction.append([_next_edge_right_])
                 elif val_down > val_right and val_down == val_diag:
-                    v2_edge_direction.append([_next_edge_diagonal_, _next_edge_down_])
+                    # v2_edge_direction.append([_next_edge_diagonal_, _next_edge_down_])
+                    v2_edge_direction.append([_next_edge_down_, _next_edge_diagonal_])
                 elif val_down > val_diag and val_down == val_right:
                     v2_edge_direction.append([_next_edge_right_, _next_edge_down_])
                 elif val_diag == val_right and val_diag > val_down:
-                    # v2_edge_direction.append([_next_edge_right_, _next_edge_diagonal_])
-                    v2_edge_direction.append([_next_edge_diagonal_, _next_edge_right_])
+                    v2_edge_direction.append([_next_edge_right_, _next_edge_diagonal_])
+                    # v2_edge_direction.append([_next_edge_diagonal_, _next_edge_right_])
                 elif val_diag == val_down and val_diag == val_right:
-                    v2_edge_direction.append([_next_edge_diagonal_, _next_edge_right_, _next_edge_down_])
+                    # v2_edge_direction.append([_next_edge_diagonal_, _next_edge_right_, _next_edge_down_])
+                    # v2_edge_direction.append([_next_edge_right_, _next_edge_diagonal_, _next_edge_down_])
+                    v2_edge_direction.append([_next_edge_right_, _next_edge_down_, _next_edge_diagonal_])
                 else:
                     ValueError("shouldn't be here, all val_down / val_right / val_diag inequalities should be handled")
 
@@ -142,7 +145,7 @@ def find_middle_edge(nucleotide_vertical, nucleotide_horizontal, top_left, botto
             max_node_idx_edge_directions = []
         if path_val == max_path:
             max_node_idx.append([top_left[0] + i, middle_column])
-            max_node_idx_edge_directions = middle_edge_direction_towards_sink[i]
+            max_node_idx_edge_directions.append(middle_edge_direction_towards_sink[i])
         
         # print(path_val)
 
@@ -161,8 +164,11 @@ def find_middle_edge(nucleotide_vertical, nucleotide_horizontal, top_left, botto
 
     edges = []
     edge_value = []
-    for node in max_node_idx:
-        for j in max_node_idx_edge_directions:
+    for i in range(len(max_node_idx)):
+        node = max_node_idx[i]
+        if my_utils._debug_:
+            print("max node - {0}, {1}".format(str(node), max_node_idx_edge_directions[i]))
+        for j in max_node_idx_edge_directions[i]:
             edge = []
             edge.append(node)
 
