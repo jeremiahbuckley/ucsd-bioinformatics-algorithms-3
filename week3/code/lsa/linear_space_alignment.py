@@ -17,27 +17,28 @@ def find_alignment(nucleotide_vertical, nucleotide_horizontal, top_left, bottom_
 
     if len(path) == 0:
         ValueError("unexpected path length = 0")
-    print(path)
+    if my_utils._verbose_:
+        print(path)
 
     previous_node = path[0][0]
-    top_path = ""
-    bottom_path = ""
+    virt_path = ""
+    horz_path = ""
     for edge in path:
         if (previous_node[0] != edge[0][0]) or (previous_node[1] != edge[0][1]):
             ValueError("unexpected break in path. previous ({0}, {1}), current({2}, {3}).".format(previous_node[0], previous_node[1], edge[0][0], edge[0][1]))
         next_node = edge[1]
         if next_node[0] == previous_node[0]:
-            top_path += "-"
+            virt_path += "-"
         else:
-            top_path += nucleotide_vertical[next_node[0] - 1]
+            virt_path += nucleotide_vertical[next_node[0] - 1]
 
         if next_node[1] == previous_node[1]:
-            bottom_path += "-"
+            horz_path += "-"
         else:
-            bottom_path += nucleotide_horizontal[next_node[1] - 1]
+            horz_path += nucleotide_horizontal[next_node[1] - 1]
         previous_node = next_node
     
-    return path_val, top_path, bottom_path
+    return path_val, horz_path, virt_path
 
 def linear_space_alignment(nucleotide_vertical, nucleotide_horizontal, top_left, bottom_right, scoring, otab):
     if (top_left[1] == bottom_right[1]):
@@ -116,10 +117,10 @@ if __name__ == '__main__':
             indel_penalty = -1 * int(int_params.split()[1])
             scoring = my_utils.Scoring(0, 0, indel_penalty, scoring_file)
 
-        # nucleotide_horizontal = f.readline().rstrip()
-        # nucleotide_vertical = f.readline().rstrip()
-        nucleotide_vertical = f.readline().rstrip()
         nucleotide_horizontal = f.readline().rstrip()
+        nucleotide_vertical = f.readline().rstrip()
+        # nucleotide_vertical = f.readline().rstrip()
+        # nucleotide_horizontal = f.readline().rstrip()
 
     for a_idx in range(2, 3, 1):
         if len(sys.argv) > a_idx:

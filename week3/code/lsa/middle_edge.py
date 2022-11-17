@@ -92,10 +92,8 @@ def find_middle_edge_vals_from_source(nucleotide_vertical, nucleotide_horizontal
 def find_middle_edge_data(nucleotide_vertical, nucleotide_horizontal, top_left, bottom_right, scoring):
 
     middle_column = math.floor((bottom_right[1] - top_left[1]) / 2) + top_left[1]
-    print("mid_col - floor(({0} - {1}) / 2) + {1} = floor({2} / 2) + {1} = {3} + {1} = {4}".format( \
-        bottom_right[1], top_left[1], bottom_right[1] - top_left[1], \
-        math.floor((bottom_right[1] - top_left[1]) / 2), \
-        math.floor((bottom_right[1] - top_left[1]) / 2) + top_left[1]))
+    if my_utils._debug_:
+        print("mid_col - floor(({0} - {1}) / 2) + {1} = floor({2} / 2) + {1} = {3} + {1} = {4}".format( bottom_right[1], top_left[1], bottom_right[1] - top_left[1], math.floor((bottom_right[1] - top_left[1]) / 2), math.floor((bottom_right[1] - top_left[1]) / 2) + top_left[1]))
 
     if my_utils._verbose_:
         print("horz: {0}, length: {1}, mid: {2}".format(nucleotide_horizontal, bottom_right[1] - top_left[1], middle_column))
@@ -183,14 +181,14 @@ def find_middle_edge(nucleotide_vertical, nucleotide_horizontal, top_left, botto
                 edge_value.append(scoring.get_match_val(nucleotide_vertical[node[0]], nucleotide_horizontal[node[1]]))
             else:
                 ValueError("unexpected value: {0}".format(j))
-            print()
 
             edges.append(edge)
 
-    for edge in edges:
-        print("{0} {1}".format(edge[0][0], edge[0][1]))
-        print("{0} {1}".format(edge[1][0], edge[1][1]))
-        print()
+    if my_utils._verbose_:
+        for edge in edges:
+            print("{0} {1}".format(edge[0][0], edge[0][1]))
+            print("{0} {1}".format(edge[1][0], edge[1][1]))
+            print()
 
     return edges[0], edge_value[0]
 
