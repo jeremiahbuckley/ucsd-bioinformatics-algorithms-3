@@ -1,3 +1,59 @@
+
+_verbose_ = False
+_debug_ = False
+
+class Scoring:
+    def __init__ (self, match_reward, mismatch_penalty, indel_penalty, scoring_matrix_file=""):
+        self.match_reward = match_reward
+        self.mismatch_penalty = mismatch_penalty
+        self.indel_penalty = indel_penalty
+        self.using_scoring_matrix = (len(scoring_matrix_file.rstrip()) != 0)
+
+        if self.using_scoring_matrix:
+            self.scoring_matrix = self.load_scoring(scoring_matrix_file)
+    
+    def print_scoring(self):
+        print("{0} {1} {2}".format(str(self.match_reward), str(self.mismatch_penalty), str(self.indel_penalty)))
+
+    def get_match_val(self, protien1, protien2):
+        if self.using_scoring_matrix:
+            return self.scoring_matrix[protien1][protien2]
+        elif protien1 == protien2:
+            return self.match_reward
+        else:
+            return self.mismatch_penalty
+
+    def load_scoring(self, scoring_file_loc):
+        if _debug_:
+            print(scoring_file_loc)
+
+        scoring_strs = []
+        with open(scoring_file_loc) as f:
+            scoring_strs = f.readlines()
+
+        scoring = {}
+        scoring_fast_index = []
+        horz_keys = "".join(scoring_strs[0].split())
+        virt_keys = ""
+
+        for i in range(1, len(scoring_strs)):
+            row = scoring_strs[i].split()
+            key = row[0]
+            virt_keys = virt_keys + key
+            row_dict = {}
+            row_fast_index = []
+            for j in range(1, len(row)):
+                horz_key = horz_keys[j-1]
+                row_dict[horz_key] = int(row[j])
+                row_fast_index.append(int(row[j]))
+            scoring[key] = row_dict
+            scoring_fast_index.append(row_fast_index)
+
+        if _verbose_:
+            print_matrix(scoring_fast_index, virt_keys, horz_keys, 5)
+
+        return scoring
+
 def print_matrices(max_vals_matrices, backtrack_matrices, nucleotide_h, nucleotide_w):
     print("values matrices")
     for m in max_vals_matrices:
