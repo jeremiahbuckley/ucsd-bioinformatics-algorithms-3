@@ -42,9 +42,9 @@ def test_sample_0():
     rt = "test/13_MultipleSequenceAlignment/"
     file_based_test(rt + "input/sample.txt", rt + "output/sample.txt")
 
-# def test_sample_2():
-#     rt = "test/13_MultipleSequenceAlignment/"
-#     file_based_test(rt + "input/sample2.txt", rt + "output/sample2.txt")
+def test_sample_2():
+    rt = "test/13_MultipleSequenceAlignment/"
+    file_based_test(rt + "input/sample2.txt", rt + "output/sample2.txt")
 
 def test_input_1():
     rt = "test/13_MultipleSequenceAlignment/"
@@ -70,10 +70,13 @@ def test_input_6():
     rt = "test/13_MultipleSequenceAlignment/"
     file_based_test(rt + "input/input_6.txt", rt + "output/output_6.txt")
 
-# def test_input_7():
-#     rt = "test/13_MultipleSequenceAlignment/"
-#     file_based_test(rt + "/input/input_7.txt", rt + "output/output_7.txt")
+def test_input_7():
+    rt = "test/13_MultipleSequenceAlignment/"
+    file_based_test(rt + "/input/input_7.txt", rt + "output/output_7.txt")
 
+def test_ds():
+    rt = "test/13_MultipleSequenceAlignment/"
+    file_based_test(rt + "/input/ds_251.txt", rt + "output/ds_251.txt")
 
 
 

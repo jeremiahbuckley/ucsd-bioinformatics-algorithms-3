@@ -12,6 +12,7 @@ _debug_ = False
 
 global next_interval
 _one_minute_of_ns_ = 60000000000
+_15_seconds_ = _one_minute_of_ns_ / 4
 
 _not_calculated_ = -8
 
@@ -85,7 +86,7 @@ def walk_backwards_old(score_keeper, incoming_direction_keeper, nucs, existing_p
 
     if _timed_output_ and next_interval < time.process_time_ns():
         print("timeed alert - walk_backwards - node: {0}".format(node))
-        next_interval = time.process_time_ns() + _one_minute_of_ns_
+        next_interval = time.process_time_ns() + _15_seconds_
 
     paths1 = paths2 = paths3 = paths4 = paths5 = paths6 = paths7 = paths8 = []
     # print(" " * tabs + node + " " + incoming_direction_keeper[i][j][k])
@@ -165,7 +166,7 @@ def walk_backwards(score_keeper, incoming_direction_keeper, nucs, existing_paths
 
     if _timed_output_ and next_interval < time.process_time_ns():
         print("timed alert - walk_backwards - node: {0},{1},{2}".format(str(my_node[0]), str(my_node[1]), str(my_node[2])))
-        next_interval = time.process_time_ns() + _one_minute_of_ns_
+        next_interval = time.process_time_ns() + _15_seconds_
 
     directions = incoming_direction_keeper[i][j][k]
     if _debug_:
@@ -202,7 +203,96 @@ def walk_backwards(score_keeper, incoming_direction_keeper, nucs, existing_paths
 
     return
 
-def build_paths(existing_paths, nucs, current_working_paths, current_node, tabs):
+def build_paths(existing_paths, nucs, current_working_paths, current_node, found_path_fragments, tabs):
+    global next_interval
+    # if _debug_:
+    #     print(current_working_paths)
+    #     print(current_node)
+    if current_node not in existing_paths or len(existing_paths[current_node]) == 0:
+        # if _debug_:
+        #     print(current_working_paths)
+        found_path_fragments[current_node] = [["", "", ""]]
+        return found_path_fragments[current_node]
+
+    if current_node in found_path_fragments:
+        return found_path_fragments[current_node]
+    
+    if _timed_output_ and next_interval < time.process_time_ns():
+        print("timed alert - buld_paths - node: {0},{1},{2}".format(str(current_node[0]), str(current_node[1]), str(current_node[2])))
+        next_interval = time.process_time_ns() + _15_seconds_
+
+    skip_char = "-"
+    return_paths = []
+    # print(existing_paths[current_node])
+    for next_node in existing_paths[current_node]:
+        ret_fragments = build_paths(existing_paths, nucs, current_working_paths, next_node, found_path_fragments, tabs+1)
+        if _debug_:
+            print(current_node)
+            print(next_node)
+            print(ret_fragments)
+
+        if next_node[0] > current_node[0] and next_node[1] > current_node[1] and next_node[2] > current_node[2]:
+            for fragment_set in ret_fragments:
+                new_set = []
+                new_set.append(nucs[0][current_node[0]] + fragment_set[0])
+                new_set.append(nucs[1][current_node[1]] + fragment_set[1])
+                new_set.append(nucs[2][current_node[2]] + fragment_set[2])
+                return_paths.append(new_set)
+        elif next_node[0] > current_node[0] and next_node[1] > current_node[1] and next_node[2] == current_node[2]:
+            for fragment_set in ret_fragments:
+                new_set = []
+                new_set.append(nucs[0][current_node[0]] + fragment_set[0])
+                new_set.append(nucs[1][current_node[1]] + fragment_set[1])
+                new_set.append(skip_char + fragment_set[2])
+                return_paths.append(new_set)
+        elif next_node[0] == current_node[0] and next_node[1] > current_node[1] and next_node[2] > current_node[2]:
+            for fragment_set in ret_fragments:
+                new_set = []
+                new_set.append(skip_char + fragment_set[0])
+                new_set.append(nucs[1][current_node[1]] + fragment_set[1])
+                new_set.append(nucs[2][current_node[2]] + fragment_set[2])
+                return_paths.append(new_set)
+        elif next_node[0] == current_node[0] and next_node[1] > current_node[1] and next_node[2] == current_node[2]:
+            for fragment_set in ret_fragments:
+                new_set = []
+                new_set.append(skip_char + fragment_set[0])
+                new_set.append(nucs[1][current_node[1]] + fragment_set[1])
+                new_set.append(skip_char + fragment_set[2])
+                return_paths.append(new_set)
+        elif next_node[0] > current_node[0] and next_node[1] == current_node[1] and next_node[2] > current_node[2]:
+            for fragment_set in ret_fragments:
+                new_set = []
+                new_set.append(nucs[0][current_node[0]] + fragment_set[0])
+                new_set.append(skip_char + fragment_set[1])
+                new_set.append(nucs[2][current_node[2]] + fragment_set[2])
+                return_paths.append(new_set)
+        elif next_node[0] > current_node[0] and next_node[1] == current_node[1] and next_node[2] == current_node[2]:
+            for fragment_set in ret_fragments:
+                new_set = []
+                new_set.append(nucs[0][current_node[0]] + fragment_set[0])
+                new_set.append(skip_char + fragment_set[1])
+                new_set.append(skip_char + fragment_set[2])
+                return_paths.append(new_set)
+        elif next_node[0] == current_node[0] and next_node[1] == current_node[1] and next_node[2] > current_node[2]:
+            for fragment_set in ret_fragments:
+                new_set = []
+                new_set.append(skip_char + fragment_set[0])
+                new_set.append(skip_char + fragment_set[1])
+                new_set.append(nucs[2][current_node[2]] + fragment_set[2])
+                return_paths.append(new_set)
+        else:
+            raise ValueError("build_paths unexpected current_node ({0},{1},{2}) = next_node ({3},{4},{5}).".format(str(current_node[0]), str(current_node[1]), str(current_node[2]), str(next_node[0]), str(next_node[1]), str(next_node[2])))
+
+    found_path_fragments[current_node] = return_paths
+
+    if _debug_:
+        print(return_paths)
+
+    return return_paths
+
+
+def build_paths_old(existing_paths, nucs, current_working_paths, current_node, found_path_fragments, tabs):
+    global next_interval
     # if _debug_:
     #     print(current_working_paths)
     #     print(current_node)
@@ -211,6 +301,10 @@ def build_paths(existing_paths, nucs, current_working_paths, current_node, tabs)
         #     print(current_working_paths)
         return [current_working_paths]
     
+    if _timed_output_ and next_interval < time.process_time_ns():
+        print("timed alert - buld_paths - node: {0},{1},{2}".format(str(current_node[0]), str(current_node[1]), str(current_node[2])))
+        next_interval = time.process_time_ns() + _15_seconds_
+
     skip_char = "-"
     return_paths = []
     # print(existing_paths[current_node])
@@ -249,7 +343,7 @@ def build_paths(existing_paths, nucs, current_working_paths, current_node, tabs)
         # print("  " * tabs + next_paths[0])
         # print("  " * tabs + next_paths[1])
         # print("  " * tabs + next_paths[2])
-        ret = build_paths(existing_paths, nucs, next_paths, next_node, tabs+1)
+        ret = build_paths(existing_paths, nucs, next_paths, next_node, found_path_fragments, tabs+1)
 
         for r in ret:
             return_paths.append(r)
@@ -479,7 +573,7 @@ def find_common_subseq(nucs, scoring):
     #         print(str2)
     #         print(str3)
     #         print()
-    #         next_interval = time.process_time_ns() + _one_minute_of_ns_
+    #         next_interval = time.process_time_ns() + _15_seconds_
 
     #     if _debug_:
     #         print(str1)
@@ -496,7 +590,7 @@ def find_common_subseq(nucs, scoring):
     #     print()
     #     winners.append([candidate[1],candidate[2],candidate[3]])
 
-    winners = build_paths(existing_paths, nucs, ["","",""], (0,0,0), 0)
+    winners = build_paths(existing_paths, nucs, ["","",""], (0,0,0), {}, 0)
     if _debug_:
         print("winners")
         print(winners)
@@ -553,7 +647,7 @@ def find_common_subseq(nucs, scoring):
     #         print(str2)
     #         print(str3)
     #         print()
-    #         next_interval = time.process_time_ns() + _one_minute_of_ns_
+    #         next_interval = time.process_time_ns() + _15_seconds_
 
     #     if _debug_:
     #         print(str1)
@@ -586,7 +680,7 @@ def find_common_subseq(nucs, scoring):
 if __name__ == '__main__':
     start = time.process_time()
     global next_interval
-    next_interval = time.process_time_ns() + _one_minute_of_ns_
+    next_interval = time.process_time_ns() + _15_seconds_
 
     if len(sys.argv) < 1:
         print("Expected input:\n[str: filename path]\n\nfile contents:\n[string: nucleotide]\n[string: nucleotide]\n[string: nucleotide]\n-v = verbose, -vv = debug")
